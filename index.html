@@ -11,7 +11,7 @@
   <!-- Vue 3 生產版 CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
   
-  <!-- LZ-String 壓縮函式庫 -->
+  <!-- LZ-String 壓縮函式庫 (用於安全打包分享網址，支援中文與特殊字元) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 
   <!-- FontAwesome 圖標庫 -->
@@ -20,7 +20,7 @@
   <!-- Google 字體庫 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind 顏色配置 -->
   <script>
@@ -29,22 +29,23 @@
         extend: {
           colors: {
             cq: {
-              wash: '#F7F5F0',
+              wash: '#F7F5F0',       /* 和紙暖白底色 */
               card: '#FFFFFF',
-              charcoal: '#2B2B2A',
-              cinnabar: '#BC473B',
+              charcoal: '#2B2B2A',   /* 黛黑石色 */
+              cinnabar: '#BC473B',   /* 霧都朱砂紅 */
               cinnabarLight: '#FBEBE8',
-              moss: '#5B7065',
+              moss: '#5B7065',       /* 青苔黛綠 */
               mossLight: '#EEF2F0',
-              gold: '#B89255',
+              gold: '#B89255',       /* 沉香茶金 */
               goldLight: '#FAF5EC',
-              muted: '#8A8884',
-              border: '#E8E5DF'
+              muted: '#8A8884',      /* 鉛灰石色 */
+              border: '#E8E5DF'      /* 紙境細線 */
             }
           },
           fontFamily: {
             serif: ['"Noto Serif TC"', 'serif'],
             sans: ['"Noto Sans TC"', 'sans-serif'],
+            calligraphy: ['"Ma Shan Zheng"', 'cursive', 'serif'],
             mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
           }
         }
@@ -53,6 +54,12 @@
   </script>
 
   <style>
+    :root {
+      --sat: env(safe-area-inset-top);
+      --sab: env(safe-area-inset-bottom);
+      --sal: env(safe-area-inset-left);
+      --sar: env(safe-area-inset-right);
+    }
     body {
       background-color: #F7F5F0;
       color: #2B2B2A;
@@ -62,12 +69,16 @@
       padding: 0;
       width: 100%;
       min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    html {
+      height: -webkit-fill-available;
     }
     .safe-top {
       padding-top: max(0.75rem, env(safe-area-inset-top));
     }
     .safe-bottom {
-      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
     }
     .font-serif-cq {
       font-family: 'Noto Serif TC', serif;
@@ -84,7 +95,7 @@
       background-size: 16px 16px;
     }
     .fade-enter-active, .fade-leave-active {
-      transition: opacity 0.2s ease;
+      transition: opacity 0.25s ease;
     }
     .fade-enter-from, .fade-leave-to {
       opacity: 0;
@@ -96,6 +107,7 @@
 
   <!-- 1. 主導航頂欄 (Header) -->
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-cq-border px-4 pt-3 pb-2.5 safe-top w-full shadow-sm space-y-2">
+    <!-- 上層：旅遊主題、日程標記與離線標籤 -->
     <div class="flex items-center justify-between w-full">
       <div class="flex items-center space-x-2.5 min-w-0 flex-1">
         <button 
@@ -126,27 +138,27 @@
       </span>
     </div>
 
-    <!-- 即時匯率與行程分享按鈕 -->
+    <!-- 下層：即時匯率與行程分享按鈕 -->
     <div class="flex items-center justify-between pt-1 border-t border-cq-border/40 w-full">
       <div class="flex items-center space-x-1.5 flex-1 min-w-0">
-        <!-- 匯率按鈕 -->
+        <!-- 匯率鈕 -->
         <button 
           type="button"
           @click="openCurrencyModal" 
           class="bg-cq-goldLight text-cq-gold px-2.5 py-1 rounded-full text-xs font-mono flex items-center space-x-1 border border-cq-gold/20 active:scale-95 transition"
           title="點擊切換幣別與更新匯率"
         >
-          <i class="fa-solid fa-coins text-[10px]"></i>
+          <span class="text-[10px]">{{ currentCurrency.symbol }}</span>
           <span>1 {{ currentCurrency.code }} ≈ {{ exchangeRate.toFixed(2) }} TWD</span>
         </button>
       </div>
 
-      <!-- 一鍵產生分享連結 -->
+      <!-- 一鍵產生專屬分享連結 -->
       <button 
         type="button"
         @click="generateShareUrl" 
         class="bg-cq-cinnabar text-white px-3 py-1 rounded-full text-xs font-serif-cq flex items-center space-x-1 shadow-sm hover:bg-black transition active:scale-95 flex-shrink-0"
-        title="將記帳支出與預算產生分享連結"
+        title="將目前排好的記帳與預算產生分享連結"
       >
         <i class="fa-solid fa-share-nodes text-[10px]"></i>
         <span>分享記帳</span>
@@ -154,242 +166,209 @@
     </div>
   </header>
 
-  <main class="flex-1 px-4 pt-4 w-full max-w-2xl mx-auto">
+  <main class="flex-1 px-4 pt-4 w-full max-w-2xl mx-auto space-y-4">
 
-    <!-- TAB 1: 記帳分頁 (Expense) -->
-    <section v-show="activeTab === 'expense'" class="space-y-4">
+    <!-- ==================== TAB 1: 記帳 (Accounting / Expense Tracking) ==================== -->
+    <section v-show="activeTab === 'expenses'" class="space-y-4">
       
-      <!-- 1. 個人旅遊預算監控 (依外幣為主顯示，折算台幣) -->
-      <div class="bg-white rounded-2xl p-4 border border-cq-border shadow-sm space-y-3">
-        <div class="flex justify-between items-start">
-          <div>
-            <div class="flex items-center space-x-1.5">
-              <i class="fa-solid fa-gauge-high text-xs text-cq-cinnabar"></i>
-              <h2 class="text-base font-serif-cq font-bold text-cq-charcoal">個人旅遊預算監控</h2>
-            </div>
-            <span class="text-[10px] text-cq-muted font-mono block mt-0.5">以旅程外幣主計 · 折算台幣監管</span>
-          </div>
-
-          <!-- 設定預算上限按鈕 -->
-          <button 
-            type="button"
-            @click="openEditBudgetCapModal" 
-            class="px-2.5 py-1 rounded-xl bg-cq-wash border border-cq-border text-cq-charcoal hover:border-cq-charcoal text-xs font-mono flex items-center space-x-1 transition active:scale-95 shadow-xs"
-            title="調整外幣總預算上限"
-          >
-            <i class="fa-solid fa-sliders text-[10px] text-cq-muted"></i>
-            <span>設定上限</span>
-          </button>
-        </div>
-
-        <!-- 預算上限主要展示卡片 (大字體外幣為主，折算台幣) -->
-        <div class="p-3 bg-cq-wash rounded-xl border border-cq-border flex justify-between items-center">
-          <div>
-            <span class="text-[11px] text-cq-muted block">個人外幣預算上限</span>
-            <div class="flex items-baseline space-x-1">
-              <span class="text-xl font-black font-mono text-cq-charcoal">
-                {{ currentCurrency.symbol }}{{ budgetCapForeign.toLocaleString() }}
-              </span>
-              <span class="text-[10px] font-mono text-cq-muted font-bold">{{ currentCurrency.code }}</span>
-            </div>
-          </div>
-          <div class="text-right">
-            <span class="text-[10px] text-cq-muted font-mono block">換算台幣</span>
-            <strong class="text-sm font-mono text-cq-charcoal">
-              NT${{ Math.round(budgetCapForeign * exchangeRate).toLocaleString() }}
-            </strong>
-          </div>
-        </div>
-
-        <!-- 支出與剩餘額度：改用簡潔俐落的「橫列 (Row)」顯示 -->
-        <div class="bg-cq-wash/80 rounded-xl border border-cq-border p-3 space-y-2.5 font-mono">
-          <!-- 橫列 1: 扣抵預算之已支出 (現金) -->
-          <div class="flex items-center justify-between text-xs pb-2 border-b border-cq-border/60">
-            <div class="flex items-center space-x-1.5">
-              <span class="w-2 h-2 rounded-full bg-cq-cinnabar"></span>
-              <span class="text-cq-charcoal font-sans font-medium">扣抵預算之已支出 (現金)</span>
-            </div>
-            <div class="text-right">
-              <span class="font-bold text-cq-cinnabar text-sm">
-                {{ currentCurrency.symbol }}{{ Math.round(totalCashExpenseForeign).toLocaleString() }}
-              </span>
-              <span class="text-[10px] text-cq-muted ml-1.5">
-                ≈ NT${{ Math.round(totalCashExpenseTwd).toLocaleString() }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 橫列 2: 外幣預算剩餘額度 -->
-          <div class="flex items-center justify-between text-xs">
-            <div class="flex items-center space-x-1.5">
-              <span class="w-2 h-2 rounded-full" :class="remainingBudgetForeign < 0 ? 'bg-rose-500' : 'bg-cq-moss'"></span>
-              <span class="text-cq-charcoal font-sans font-medium">外幣預算剩餘額度</span>
-            </div>
-            <div class="text-right">
-              <span class="font-bold text-sm" :class="remainingBudgetForeign < 0 ? 'text-rose-600' : 'text-cq-moss'">
-                {{ currentCurrency.symbol }}{{ Math.round(remainingBudgetForeign).toLocaleString() }}
-              </span>
-              <span class="text-[10px] text-cq-muted ml-1.5">
-                ≈ NT${{ Math.round(remainingBudgetForeign * exchangeRate).toLocaleString() }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 預算消耗進度條 -->
-        <div class="space-y-1">
-          <div class="flex justify-between text-[11px] font-mono text-cq-muted">
-            <span>預算消耗率</span>
-            <span class="font-bold" :class="budgetUsagePercent > 100 ? 'text-rose-600' : 'text-cq-charcoal'">
-              {{ budgetUsagePercent.toFixed(1) }}%
-            </span>
-          </div>
-          <div class="w-full bg-cq-wash h-2 rounded-full overflow-hidden border border-cq-border">
-            <div 
-              class="h-full transition-all duration-300"
-              :class="budgetUsagePercent > 100 ? 'bg-rose-600' : (budgetUsagePercent > 85 ? 'bg-amber-500' : 'bg-cq-moss')"
-              :style="{ width: Math.min(100, budgetUsagePercent) + '%' }"
-            ></div>
-          </div>
-          <p v-if="budgetUsagePercent > 100" class="text-[10px] text-rose-600 font-medium pt-0.5">
-            <i class="fa-solid fa-triangle-exclamation mr-1"></i>提醒：現金預算已超支！
-          </p>
-        </div>
-      </div>
-
-      <!-- 2. 信用卡消費與手續費 (獨立統計 · 台幣為主 · 不扣抵預算餘額) -->
+      <!-- 1. 個人旅遊預算監控 (外幣為主顯示) -->
       <div class="bg-white rounded-2xl p-4 border border-cq-border shadow-sm space-y-3">
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-1.5">
-            <i class="fa-solid fa-credit-card text-xs text-cq-gold"></i>
-            <div>
-              <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">信用卡消費與手續費</h3>
-              <span class="text-[10px] text-cq-muted font-sans block">獨立統計 · 不扣抵外幣現金預算餘額</span>
-            </div>
+            <span class="w-2 h-2 rounded-full bg-cq-cinnabar"></span>
+            <h2 class="text-sm font-serif-cq font-bold text-cq-charcoal">個人旅遊預算監控</h2>
           </div>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cq-goldLight text-cq-gold font-bold border border-cq-gold/30">
-            海外刷卡 {{ cardExpenseItems.length }} 筆
-          </span>
+          <button 
+            type="button" 
+            @click="openEditBudgetCapModal" 
+            class="text-[11px] font-mono text-cq-gold hover:text-cq-charcoal flex items-center space-x-1 px-2 py-0.5 rounded-lg bg-cq-wash border border-cq-border active:scale-95"
+            title="調整個人外幣預算上限"
+          >
+            <i class="fa-solid fa-sliders text-[10px]"></i>
+            <span>設定預算</span>
+          </button>
         </div>
 
-        <div class="p-3 bg-cq-wash rounded-xl border border-cq-border text-xs font-mono space-y-2">
-          <div class="flex justify-between items-center text-cq-charcoal">
-            <span>海外刷卡簽帳金額 (TWD):</span>
-            <strong>NT${{ totalCardAmountTwd.toLocaleString() }}</strong>
+        <!-- 預算總覽資訊 (外幣為主顯示) -->
+        <div class="space-y-2">
+          <!-- 上排：預算上限 -->
+          <div class="p-3 bg-cq-wash rounded-xl border border-cq-border flex justify-between items-center">
+            <span class="text-xs text-cq-muted font-medium">個人外幣預算上限</span>
+            <div class="text-right">
+              <span class="text-lg font-black font-mono text-cq-charcoal">
+                {{ currentCurrency.symbol }}{{ budgetCapForeign.toLocaleString() }} {{ currentCurrency.code }}
+              </span>
+              <span class="block text-[10px] font-mono text-cq-muted">
+                ≈ NT${{ Math.round(budgetCapForeign * exchangeRate).toLocaleString() }}
+              </span>
+            </div>
           </div>
-          <div class="flex justify-between items-center text-cq-cinnabar">
-            <span class="flex items-center space-x-1">
-              <span>海外交易手續費 (~1.5%):</span>
-              <i class="fa-solid fa-circle-info text-[9px] text-cq-muted" title="通常銀行收取約 1.5% 海外交易服務費"></i>
-            </span>
-            <strong>+ NT${{ totalCardFeeTwd.toLocaleString() }}</strong>
+
+          <!-- 下排：已支出與剩餘額度 (橫列精簡緊湊呈現) -->
+          <div class="p-2.5 bg-cq-wash rounded-xl border border-cq-border space-y-2 text-xs font-mono">
+            <div class="flex justify-between items-center">
+              <span class="text-cq-muted font-sans text-xs">扣抵預算之已支出</span>
+              <div class="text-right flex items-baseline space-x-1.5">
+                <span class="font-bold text-cq-cinnabar text-sm">
+                  {{ currentCurrency.symbol }}{{ totalCashExpenseForeign.toFixed(1) }}
+                </span>
+                <span class="text-[10px] text-cq-muted">
+                  (≈ NT${{ Math.round(totalCashExpenseTwd).toLocaleString() }})
+                </span>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-1.5 border-t border-cq-border/60">
+              <span class="text-cq-muted font-sans text-xs">外幣預算剩餘額度</span>
+              <div class="text-right flex items-baseline space-x-1.5">
+                <span class="font-bold text-sm" :class="remainingBudgetForeign < 0 ? 'text-rose-600 font-black' : 'text-cq-moss'">
+                  {{ currentCurrency.symbol }}{{ remainingBudgetForeign.toFixed(1) }}
+                </span>
+                <span class="text-[10px] text-cq-muted">
+                  (≈ NT${{ Math.round(remainingBudgetForeign * exchangeRate).toLocaleString() }})
+                </span>
+              </div>
+            </div>
           </div>
-          <div class="pt-2 border-t border-cq-border/80 flex justify-between items-center font-bold text-sm text-cq-charcoal">
-            <span>信用卡應繳總額合計:</span>
-            <span class="text-cq-cinnabar font-black text-base">NT${{ (totalCardAmountTwd + totalCardFeeTwd).toLocaleString() }}</span>
+        </div>
+
+        <!-- 預算進度條 -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10px] font-mono text-cq-muted">
+            <span>預算消耗率</span>
+            <span :class="budgetUsagePercentage > 100 ? 'text-rose-600 font-bold' : ''">{{ budgetUsagePercentage }}%</span>
+          </div>
+          <div class="w-full bg-cq-wash rounded-full h-2 overflow-hidden border border-cq-border/80">
+            <div 
+              class="h-full transition-all duration-300"
+              :class="budgetUsagePercentage > 100 ? 'bg-rose-500' : (budgetUsagePercentage > 85 ? 'bg-amber-500' : 'bg-cq-moss')"
+              :style="{ width: Math.min(budgetUsagePercentage, 100) + '%' }"
+            ></div>
           </div>
         </div>
       </div>
 
-      <!-- 3. 消費紀錄明細 (記一筆按鈕已移至標題旁邊，項目框短版緊湊化) -->
+      <!-- 2. 信用卡消費與手續費 (獨立統計 · 台幣為主) -->
+      <div class="bg-white rounded-2xl p-4 border border-cq-border shadow-sm space-y-2.5">
+        <div class="flex items-center justify-between pb-2 border-b border-cq-border/60">
+          <div class="flex items-center space-x-1.5">
+            <i class="fa-solid fa-credit-card text-xs text-cq-gold"></i>
+            <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">信用卡消費與手續費 (獨立統計 · 台幣為主)</h3>
+          </div>
+          <span class="text-[10px] font-mono text-cq-muted bg-cq-wash px-2 py-0.5 rounded border border-cq-border">
+            不扣抵預算餘額
+          </span>
+        </div>
+
+        <div class="p-3 bg-cq-goldLight/40 rounded-xl border border-cq-gold/20 text-xs font-mono space-y-1.5">
+          <div class="flex justify-between items-center text-cq-charcoal">
+            <span>海外刷卡累積 (TWD):</span>
+            <strong class="text-sm">NT${{ totalCreditCardSpendTwd.toLocaleString() }}</strong>
+          </div>
+          <div class="flex justify-between items-center text-cq-muted text-[11px]">
+            <span>預估海外交易手續費 (1.5%):</span>
+            <span>+ NT${{ totalCreditCardFeeTwd.toLocaleString() }}</span>
+          </div>
+          <div class="flex justify-between items-center text-cq-charcoal pt-1.5 border-t border-cq-gold/30 font-bold">
+            <span class="text-cq-gold">信用卡應繳總額:</span>
+            <strong class="text-cq-gold text-base">NT${{ (totalCreditCardSpendTwd + totalCreditCardFeeTwd).toLocaleString() }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 消費紀錄明細 -->
       <div class="space-y-3">
-        <div class="flex items-center justify-between">
+        <!-- 頂部按鈕列：標題、記一筆按鈕與篩選列 -->
+        <div class="flex items-center justify-between gap-2">
           <div class="flex items-center space-x-2">
             <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">消費紀錄明細</h3>
-            <span class="text-xs text-cq-muted font-mono">({{ filteredExpenseItems.length }} 筆)</span>
+            <span class="text-xs font-mono text-cq-muted">({{ filteredExpenses.length }} 筆)</span>
           </div>
 
-          <!-- 移至右側的「記一筆消費支出」主要操作按鈕 -->
+          <!-- 記一筆消費支出按鈕 -->
           <button 
             type="button"
             @click="openAddExpenseModal" 
-            class="px-3 py-1.5 bg-cq-charcoal hover:bg-black text-white rounded-xl text-xs font-serif-cq font-medium transition flex items-center space-x-1.5 shadow-sm active:scale-95"
+            class="px-3 py-1.5 bg-cq-charcoal hover:bg-black text-white rounded-xl text-xs font-serif-cq font-medium transition flex items-center space-x-1.5 shadow-sm active:scale-95 flex-shrink-0"
           >
             <i class="fa-solid fa-plus text-[10px]"></i>
             <span>記一筆消費支出</span>
           </button>
         </div>
 
-        <!-- 篩選列：全部 / 現金 / 信用卡 -->
-        <div class="flex space-x-1.5 text-xs font-mono">
-          <button 
-            type="button"
-            @click="expenseFilterMethod = 'ALL'"
-            class="px-3 py-1 rounded-xl transition border text-[11px]"
-            :class="expenseFilterMethod === 'ALL' ? 'bg-cq-charcoal text-white border-cq-charcoal font-bold' : 'bg-white text-cq-muted border-cq-border'"
-          >
-            全部 ({{ expenseItems.length }})
-          </button>
-          <button 
-            type="button"
-            @click="expenseFilterMethod = 'cash'"
-            class="px-3 py-1 rounded-xl transition border text-[11px]"
-            :class="expenseFilterMethod === 'cash' ? 'bg-cq-charcoal text-white border-cq-charcoal font-bold' : 'bg-white text-cq-muted border-cq-border'"
-          >
-            現金 ({{ cashExpenseCount }})
-          </button>
-          <button 
-            type="button"
-            @click="expenseFilterMethod = 'card'"
-            class="px-3 py-1 rounded-xl transition border text-[11px]"
-            :class="expenseFilterMethod === 'card' ? 'bg-cq-charcoal text-white border-cq-charcoal font-bold' : 'bg-white text-cq-muted border-cq-border'"
-          >
-            信用卡 ({{ cardExpenseItems.length }})
-          </button>
+        <!-- 篩選列 -->
+        <div class="flex items-center justify-between">
+          <div class="flex space-x-1 text-xs font-mono">
+            <button 
+              type="button" 
+              @click="expenseFilter = 'all'"
+              class="px-2.5 py-1 rounded-full border text-[11px] transition"
+              :class="expenseFilter === 'all' ? 'bg-cq-charcoal text-white border-cq-charcoal font-bold' : 'bg-white text-cq-muted border-cq-border'"
+            >
+              全部
+            </button>
+            <button 
+              type="button" 
+              @click="expenseFilter = 'cash'"
+              class="px-2.5 py-1 rounded-full border text-[11px] transition"
+              :class="expenseFilter === 'cash' ? 'bg-cq-charcoal text-white border-cq-charcoal font-bold' : 'bg-white text-cq-muted border-cq-border'"
+            >
+              現金
+            </button>
+            <button 
+              type="button" 
+              @click="expenseFilter = 'credit'"
+              class="px-2.5 py-1 rounded-full border text-[11px] transition"
+              :class="expenseFilter === 'credit' ? 'bg-cq-charcoal text-white border-cq-charcoal font-bold' : 'bg-white text-cq-muted border-cq-border'"
+            >
+              信用卡
+            </button>
+          </div>
         </div>
 
-        <!-- 消費項目列表 (緊湊精簡樣式) -->
-        <div v-if="filteredExpenseItems.length > 0" class="space-y-2">
+        <!-- 消費項目列表 (縮短緊湊卡片樣式) -->
+        <div v-if="filteredExpenses.length > 0" class="space-y-2">
           <div 
-            v-for="exp in filteredExpenseItems" 
-            :key="exp.id"
-            class="bg-white rounded-2xl py-2 px-3 border border-cq-border shadow-sm flex items-center justify-between hover:border-cq-cinnabar/30 transition"
+            v-for="item in filteredExpenses" 
+            :key="item.id"
+            class="bg-white rounded-xl py-2 px-3 border border-cq-border shadow-xs hover:border-cq-cinnabar/30 transition flex flex-col justify-between"
           >
-            <!-- 左側：分類標籤、品名、時間與簡短備註 -->
-            <div class="flex items-center space-x-2.5 min-w-0 flex-1 pr-2">
-              <span 
-                class="w-8 h-8 rounded-xl flex items-center justify-center text-xs flex-shrink-0"
-                :class="exp.paymentMethod === 'card' ? 'bg-cq-goldLight text-cq-gold' : 'bg-cq-cinnabarLight text-cq-cinnabar'"
-              >
-                <i :class="getCategoryIcon(exp.category)"></i>
-              </span>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2 min-w-0 flex-1">
+                <span 
+                  class="text-[10px] font-mono px-1.5 py-0.5 rounded font-medium border flex-shrink-0"
+                  :class="item.paymentMethod === 'credit' ? 'bg-cq-goldLight text-cq-gold border-cq-gold/30' : 'bg-cq-mossLight text-cq-moss border-cq-moss/30'"
+                >
+                  {{ item.paymentMethod === 'credit' ? '信用卡' : '現金' }}
+                </span>
+                <span class="text-[10px] text-cq-muted font-mono flex-shrink-0">{{ item.dateShort }}</span>
+                <h4 class="font-bold text-cq-charcoal text-xs truncate">{{ item.title }}</h4>
+              </div>
 
-              <div class="min-w-0 flex-1 leading-tight">
-                <div class="flex items-center space-x-1.5">
-                  <h4 class="font-bold text-cq-charcoal text-xs truncate">{{ exp.title }}</h4>
-                  <span 
-                    class="text-[9px] px-1 py-0.2 rounded font-mono font-medium flex-shrink-0"
-                    :class="exp.paymentMethod === 'card' ? 'bg-cq-goldLight text-cq-gold border border-cq-gold/30' : 'bg-cq-wash text-cq-muted border border-cq-border'"
-                  >
-                    {{ exp.paymentMethod === 'card' ? '信用卡' : '現金' }}
+              <!-- 右側金額與操作 -->
+              <div class="flex items-center space-x-2 flex-shrink-0 pl-2">
+                <div class="text-right">
+                  <strong class="font-mono text-xs text-cq-charcoal block">
+                    {{ item.paymentMethod === 'credit' ? 'NT$' + item.amountTwd.toLocaleString() : currentCurrency.symbol + item.amountForeign }}
+                  </strong>
+                  <span class="text-[9px] font-mono text-cq-muted block">
+                    {{ item.paymentMethod === 'credit' ? currentCurrency.symbol + item.amountForeign : '≈ NT$' + item.amountTwd }}
                   </span>
                 </div>
-                <div class="flex items-center space-x-2 text-[10px] text-cq-muted font-mono mt-0.5 truncate">
-                  <span>{{ formatDateTime(exp.datetime) }}</span>
-                  <span v-if="exp.notes" class="truncate font-sans opacity-80">· {{ exp.notes }}</span>
+                
+                <div class="flex items-center space-x-0.5 text-cq-muted">
+                  <button type="button" @click="openEditExpenseModal(item)" class="p-1 hover:text-cq-charcoal" title="編輯">
+                    <i class="fa-regular fa-pen-to-square text-xs"></i>
+                  </button>
+                  <button type="button" @click="deleteExpenseItem(item.id)" class="p-1 hover:text-cq-cinnabar" title="刪除">
+                    <i class="fa-regular fa-trash-can text-xs"></i>
+                  </button>
                 </div>
               </div>
             </div>
 
-            <!-- 右側：雙幣別金額與操作鈕 -->
-            <div class="text-right flex items-center space-x-2 flex-shrink-0">
-              <div class="leading-tight">
-                <strong class="font-mono text-xs text-cq-charcoal block">
-                  {{ exp.currencySymbol || currentCurrency.symbol }}{{ exp.originalAmount }}
-                </strong>
-                <span class="text-[10px] font-mono text-cq-muted block">
-                  ≈ NT${{ (exp.twdAmount + (exp.feeTwd || 0)).toLocaleString() }}
-                </span>
-              </div>
-
-              <div class="flex items-center space-x-1 text-cq-muted text-xs">
-                <button type="button" @click="openEditExpenseModal(exp)" class="p-1 hover:text-cq-charcoal" title="編輯">
-                  <i class="fa-regular fa-pen-to-square"></i>
-                </button>
-                <button type="button" @click="deleteExpenseItem(exp.id)" class="p-1 hover:text-cq-cinnabar" title="刪除">
-                  <i class="fa-regular fa-trash-can"></i>
-                </button>
-              </div>
+            <div v-if="item.notes" class="text-[10px] text-cq-muted mt-1 truncate border-t border-cq-border/30 pt-1">
+              {{ item.notes }}
             </div>
           </div>
         </div>
@@ -399,22 +378,24 @@
           <div class="w-10 h-10 rounded-full bg-cq-wash border border-cq-border flex items-center justify-center mx-auto text-cq-muted">
             <i class="fa-solid fa-receipt text-base"></i>
           </div>
-          <p class="text-xs text-cq-muted">尚無符合此條件的消費紀錄，點擊右上角「記一筆消費支出」開始記錄！</p>
+          <div class="text-xs text-cq-muted">
+            目前尚無符合條件的消費紀錄，點擊上方按鈕開始記帳！
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- TAB 2: 預算 (Budget) -->
+    <!-- ==================== TAB 2: 預算 (Budget Planning) ==================== -->
     <section v-show="activeTab === 'budget'" class="space-y-4">
-      <!-- 預算總卡片 (綜合總計以台幣計算) -->
+      <!-- 預算總卡片 (以台幣總合計算為主) -->
       <div class="bg-white rounded-2xl p-4 border border-cq-border shadow-sm space-y-3">
         <div class="flex justify-between items-start">
           <div>
-            <span class="text-[10px] text-cq-muted uppercase tracking-wider block font-mono">Budget Plan</span>
+            <span class="text-[10px] text-cq-muted uppercase tracking-wider block font-mono">Budget Overview</span>
             <h2 class="text-base font-serif-cq font-bold text-cq-charcoal">行程預算規劃總覽</h2>
           </div>
           <div class="text-right">
-            <!-- 總額以新台幣 TWD 為主 -->
+            <span class="text-xs font-mono text-cq-muted block">台幣綜合總計</span>
             <span class="text-xl font-black font-mono text-cq-charcoal">NT${{ totalBudgetTwd.toLocaleString() }}</span>
             <span class="block text-[11px] font-mono text-cq-muted">
               ≈ {{ currentCurrency.symbol }}{{ totalBudgetDestCurrency.toFixed(1) }} {{ currentCurrency.code }}
@@ -422,7 +403,6 @@
           </div>
         </div>
 
-        <!-- 四大分類台幣小計清單 -->
         <div class="p-3 bg-cq-wash rounded-xl border border-cq-border text-xs space-y-1.5 font-mono">
           <div class="flex justify-between items-center text-cq-charcoal">
             <span>固定大項小計:</span>
@@ -449,109 +429,322 @@
           class="w-full py-2.5 bg-cq-charcoal hover:bg-black text-white rounded-xl text-xs font-serif-cq font-medium transition flex items-center justify-center space-x-1.5 shadow-sm active:scale-98"
         >
           <i class="fa-solid fa-plus text-[10px]"></i>
-          <span>新增預算規劃項目</span>
+          <span>新增預算項目</span>
         </button>
       </div>
 
-      <!-- 四大分類：依排序後分組自動小計 (無生硬卡片框，純粹列表展示) -->
-      <div 
-        v-for="cat in budgetCategories" 
-        :key="cat.key"
-        class="bg-white rounded-2xl p-4 border border-cq-border shadow-sm space-y-3"
-      >
+      <!-- 分類 1: 固定大項開銷 (排序後自動小計) -->
+      <div class="bg-white rounded-2xl p-4 border border-cq-border shadow-sm space-y-2.5">
         <div class="flex items-center justify-between pb-2 border-b border-cq-border/60">
           <div class="flex items-center space-x-2">
-            <i :class="cat.icon" class="text-xs"></i>
-            <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">{{ cat.title }}</h3>
+            <i class="fa-solid fa-plane text-xs text-cq-moss"></i>
+            <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">固定大項開銷</h3>
           </div>
-          <!-- 該類別全部折合台幣總合 -->
-          <span class="text-xs font-mono font-bold text-cq-charcoal">
-            合計: NT${{ Math.round(getCategoryTotalTwd(cat.key)).toLocaleString() }}
+          <span class="text-xs font-mono font-bold text-cq-moss">
+            合併總額: NT${{ Math.round(getCategoryTotalTwd(CATEGORY_KEYS.FIXED)).toLocaleString() }}
           </span>
         </div>
 
-        <div v-if="getItemsByCategory(cat.key).length > 0" class="space-y-3">
-          <!-- 1. 外幣項目排序群組 -->
-          <div v-if="getCategoryForeignItems(cat.key).length > 0" class="space-y-1.5">
-            <div class="flex items-center justify-between text-[11px] font-mono px-1 text-cq-cinnabar font-semibold">
-              <span class="flex items-center space-x-1">
-                <span>●</span>
-                <span>外幣項目 ({{ currentCurrency.code }})</span>
-              </span>
-              <span>小計: {{ currentCurrency.symbol }}{{ getCategoryForeignSubtotal(cat.key).toLocaleString() }}</span>
+        <div v-if="getItemsByCategory(CATEGORY_KEYS.FIXED).length > 0" class="space-y-3">
+          <!-- 外幣群組 -->
+          <div v-if="getCategoryGroupedItems(CATEGORY_KEYS.FIXED).foreign.length > 0" class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] font-mono font-bold text-cq-charcoal px-1">
+              <span>● 外幣項目小計</span>
+              <span>{{ currentCurrency.symbol }}{{ getCategoryGroupedItems(CATEGORY_KEYS.FIXED).foreignSubtotal.toLocaleString() }} {{ currentCurrency.code }}</span>
             </div>
-
-            <div class="space-y-1.5">
-              <div 
-                v-for="b in getCategoryForeignItems(cat.key)" 
-                :key="b.id"
-                class="p-2.5 bg-cq-wash/70 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
-              >
+            <div 
+              v-for="b in getCategoryGroupedItems(CATEGORY_KEYS.FIXED).foreign" 
+              :key="b.id"
+              class="p-2.5 bg-cq-wash/60 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
+            >
+              <div>
+                <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
+                <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5">{{ b.notes }}</span>
+              </div>
+              <div class="text-right flex items-center space-x-2">
                 <div>
-                  <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
-                  <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5 font-sans">{{ b.notes }}</span>
+                  <strong class="text-cq-charcoal block">{{ currentCurrency.symbol }}{{ b.amount.toLocaleString() }}</strong>
+                  <span class="text-[10px] text-cq-muted block">≈ NT${{ Math.round(b.amount * exchangeRate).toLocaleString() }}</span>
                 </div>
-                <div class="text-right flex items-center space-x-2">
-                  <div>
-                    <strong class="text-cq-charcoal block">{{ currentCurrency.symbol }}{{ b.amount }}</strong>
-                    <span class="text-[10px] text-cq-muted block">≈ NT${{ Math.round(b.amount * exchangeRate).toLocaleString() }}</span>
-                  </div>
-                  <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
-                    <i class="fa-regular fa-pen-to-square text-xs"></i>
-                  </button>
-                  <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
-                    <i class="fa-regular fa-trash-can text-xs"></i>
-                  </button>
-                </div>
+                <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
+                  <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- 2. 台幣項目排序群組 -->
-          <div v-if="getCategoryTwdItems(cat.key).length > 0" class="space-y-1.5">
-            <div class="flex items-center justify-between text-[11px] font-mono px-1 text-cq-moss font-semibold">
-              <span class="flex items-center space-x-1">
-                <span>●</span>
-                <span>台幣項目 (TWD)</span>
-              </span>
-              <span>小計: NT${{ getCategoryTwdSubtotal(cat.key).toLocaleString() }}</span>
+          <!-- 台幣群組 -->
+          <div v-if="getCategoryGroupedItems(CATEGORY_KEYS.FIXED).twd.length > 0" class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] font-mono font-bold text-cq-charcoal px-1">
+              <span>● 台幣項目小計</span>
+              <span>NT${{ getCategoryGroupedItems(CATEGORY_KEYS.FIXED).twdSubtotal.toLocaleString() }}</span>
             </div>
-
-            <div class="space-y-1.5">
-              <div 
-                v-for="b in getCategoryTwdItems(cat.key)" 
-                :key="b.id"
-                class="p-2.5 bg-cq-wash/70 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
-              >
+            <div 
+              v-for="b in getCategoryGroupedItems(CATEGORY_KEYS.FIXED).twd" 
+              :key="b.id"
+              class="p-2.5 bg-cq-wash/60 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
+            >
+              <div>
+                <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
+                <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5">{{ b.notes }}</span>
+              </div>
+              <div class="text-right flex items-center space-x-2">
                 <div>
-                  <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
-                  <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5 font-sans">{{ b.notes }}</span>
+                  <strong class="text-cq-charcoal block">NT${{ b.amount.toLocaleString() }}</strong>
                 </div>
-                <div class="text-right flex items-center space-x-2">
-                  <div>
-                    <strong class="text-cq-charcoal block">NT${{ b.amount.toLocaleString() }}</strong>
-                  </div>
-                  <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
-                    <i class="fa-regular fa-pen-to-square text-xs"></i>
-                  </button>
-                  <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
-                    <i class="fa-regular fa-trash-can text-xs"></i>
-                  </button>
-                </div>
+                <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
+                  <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
               </div>
             </div>
           </div>
         </div>
-
         <div v-else class="text-xs text-cq-muted p-3 bg-cq-wash/40 rounded-xl text-center border border-dashed border-cq-border">
-          目前尚無此分類項目。
+          目前尚無固定開銷項目。
+        </div>
+      </div>
+
+      <!-- 分類 2: 行程門票與體驗項目 (排序後自動小計) -->
+      <div class="bg-white rounded-2xl p-4 border border-cq-border shadow-sm space-y-2.5">
+        <div class="flex items-center justify-between pb-2 border-b border-cq-border/60">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-ticket text-xs text-cq-cinnabar"></i>
+            <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">行程門票與體驗項目</h3>
+          </div>
+          <span class="text-xs font-mono font-bold text-cq-cinnabar">
+            合併總額: NT${{ Math.round(getCategoryTotalTwd(CATEGORY_KEYS.TICKET)).toLocaleString() }}
+          </span>
+        </div>
+
+        <div v-if="getItemsByCategory(CATEGORY_KEYS.TICKET).length > 0" class="space-y-3">
+          <!-- 外幣群組 -->
+          <div v-if="getCategoryGroupedItems(CATEGORY_KEYS.TICKET).foreign.length > 0" class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] font-mono font-bold text-cq-charcoal px-1">
+              <span>● 外幣項目小計</span>
+              <span>{{ currentCurrency.symbol }}{{ getCategoryGroupedItems(CATEGORY_KEYS.TICKET).foreignSubtotal.toLocaleString() }} {{ currentCurrency.code }}</span>
+            </div>
+            <div 
+              v-for="b in getCategoryGroupedItems(CATEGORY_KEYS.TICKET).foreign" 
+              :key="b.id"
+              class="p-2.5 bg-cq-wash/60 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
+            >
+              <div>
+                <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
+                <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5">{{ b.notes }}</span>
+              </div>
+              <div class="text-right flex items-center space-x-2">
+                <div>
+                  <strong class="text-cq-charcoal block">{{ currentCurrency.symbol }}{{ b.amount.toLocaleString() }}</strong>
+                  <span class="text-[10px] text-cq-muted block">≈ NT${{ Math.round(b.amount * exchangeRate).toLocaleString() }}</span>
+                </div>
+                <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
+                  <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 台幣群組 -->
+          <div v-if="getCategoryGroupedItems(CATEGORY_KEYS.TICKET).twd.length > 0" class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] font-mono font-bold text-cq-charcoal px-1">
+              <span>● 台幣項目小計</span>
+              <span>NT${{ getCategoryGroupedItems(CATEGORY_KEYS.TICKET).twdSubtotal.toLocaleString() }}</span>
+            </div>
+            <div 
+              v-for="b in getCategoryGroupedItems(CATEGORY_KEYS.TICKET).twd" 
+              :key="b.id"
+              class="p-2.5 bg-cq-wash/60 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
+            >
+              <div>
+                <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
+                <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5">{{ b.notes }}</span>
+              </div>
+              <div class="text-right flex items-center space-x-2">
+                <div>
+                  <strong class="text-cq-charcoal block">NT${{ b.amount.toLocaleString() }}</strong>
+                </div>
+                <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
+                  <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-xs text-cq-muted p-3 bg-cq-wash/40 rounded-xl text-center border border-dashed border-cq-border">
+          目前尚無門票或體驗項目。
+        </div>
+      </div>
+
+      <!-- 分類 3: 餐食預估費用 (排序後自動小計) -->
+      <div class="bg-white rounded-2xl p-4 border border-cq-border shadow-sm space-y-2.5">
+        <div class="flex items-center justify-between pb-2 border-b border-cq-border/60">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-utensils text-xs text-cq-gold"></i>
+            <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">餐食預估費用</h3>
+          </div>
+          <span class="text-xs font-mono font-bold text-cq-gold">
+            合併總額: NT${{ Math.round(getCategoryTotalTwd(CATEGORY_KEYS.FOOD)).toLocaleString() }}
+          </span>
+        </div>
+
+        <div v-if="getItemsByCategory(CATEGORY_KEYS.FOOD).length > 0" class="space-y-3">
+          <!-- 外幣群組 -->
+          <div v-if="getCategoryGroupedItems(CATEGORY_KEYS.FOOD).foreign.length > 0" class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] font-mono font-bold text-cq-charcoal px-1">
+              <span>● 外幣項目小計</span>
+              <span>{{ currentCurrency.symbol }}{{ getCategoryGroupedItems(CATEGORY_KEYS.FOOD).foreignSubtotal.toLocaleString() }} {{ currentCurrency.code }}</span>
+            </div>
+            <div 
+              v-for="b in getCategoryGroupedItems(CATEGORY_KEYS.FOOD).foreign" 
+              :key="b.id"
+              class="p-2.5 bg-cq-wash/60 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
+            >
+              <div>
+                <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
+                <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5">{{ b.notes }}</span>
+              </div>
+              <div class="text-right flex items-center space-x-2">
+                <div>
+                  <strong class="text-cq-charcoal block">{{ currentCurrency.symbol }}{{ b.amount.toLocaleString() }}</strong>
+                  <span class="text-[10px] text-cq-muted block">≈ NT${{ Math.round(b.amount * exchangeRate).toLocaleString() }}</span>
+                </div>
+                <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
+                  <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 台幣群組 -->
+          <div v-if="getCategoryGroupedItems(CATEGORY_KEYS.FOOD).twd.length > 0" class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] font-mono font-bold text-cq-charcoal px-1">
+              <span>● 台幣項目小計</span>
+              <span>NT${{ getCategoryGroupedItems(CATEGORY_KEYS.FOOD).twdSubtotal.toLocaleString() }}</span>
+            </div>
+            <div 
+              v-for="b in getCategoryGroupedItems(CATEGORY_KEYS.FOOD).twd" 
+              :key="b.id"
+              class="p-2.5 bg-cq-wash/60 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
+            >
+              <div>
+                <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
+                <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5">{{ b.notes }}</span>
+              </div>
+              <div class="text-right flex items-center space-x-2">
+                <div>
+                  <strong class="text-cq-charcoal block">NT${{ b.amount.toLocaleString() }}</strong>
+                </div>
+                <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
+                  <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-xs text-cq-muted p-3 bg-cq-wash/40 rounded-xl text-center border border-dashed border-cq-border">
+          目前尚無餐食預算項目。
+        </div>
+      </div>
+
+      <!-- 分類 4: 個人限定項目 (排序後自動小計) -->
+      <div class="bg-white rounded-2xl p-4 border border-cq-border shadow-sm space-y-2.5">
+        <div class="flex items-center justify-between pb-2 border-b border-cq-border/60">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-xs text-cq-cinnabar"></i>
+            <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">個人限定項目</h3>
+          </div>
+          <span class="text-xs font-mono font-bold text-cq-moss">
+            合併總額: NT${{ Math.round(getCategoryTotalTwd(CATEGORY_KEYS.PERSONAL)).toLocaleString() }}
+          </span>
+        </div>
+
+        <div v-if="getItemsByCategory(CATEGORY_KEYS.PERSONAL).length > 0" class="space-y-3">
+          <!-- 外幣群組 -->
+          <div v-if="getCategoryGroupedItems(CATEGORY_KEYS.PERSONAL).foreign.length > 0" class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] font-mono font-bold text-cq-charcoal px-1">
+              <span>● 外幣項目小計</span>
+              <span>{{ currentCurrency.symbol }}{{ getCategoryGroupedItems(CATEGORY_KEYS.PERSONAL).foreignSubtotal.toLocaleString() }} {{ currentCurrency.code }}</span>
+            </div>
+            <div 
+              v-for="b in getCategoryGroupedItems(CATEGORY_KEYS.PERSONAL).foreign" 
+              :key="b.id"
+              class="p-2.5 bg-cq-wash/60 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
+            >
+              <div>
+                <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
+                <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5">{{ b.notes }}</span>
+              </div>
+              <div class="text-right flex items-center space-x-2">
+                <div>
+                  <strong class="text-cq-charcoal block">{{ currentCurrency.symbol }}{{ b.amount.toLocaleString() }}</strong>
+                  <span class="text-[10px] text-cq-muted block">≈ NT${{ Math.round(b.amount * exchangeRate).toLocaleString() }}</span>
+                </div>
+                <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
+                  <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 台幣群組 -->
+          <div v-if="getCategoryGroupedItems(CATEGORY_KEYS.PERSONAL).twd.length > 0" class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] font-mono font-bold text-cq-charcoal px-1">
+              <span>● 台幣項目小計</span>
+              <span>NT${{ getCategoryGroupedItems(CATEGORY_KEYS.PERSONAL).twdSubtotal.toLocaleString() }}</span>
+            </div>
+            <div 
+              v-for="b in getCategoryGroupedItems(CATEGORY_KEYS.PERSONAL).twd" 
+              :key="b.id"
+              class="p-2.5 bg-cq-wash/60 rounded-xl border border-cq-border flex items-center justify-between text-xs font-mono"
+            >
+              <div>
+                <span class="font-sans font-bold text-cq-charcoal block">{{ b.title }}</span>
+                <span v-if="b.notes" class="text-[10px] text-cq-muted block mt-0.5">{{ b.notes }}</span>
+              </div>
+              <div class="text-right flex items-center space-x-2">
+                <div>
+                  <strong class="text-cq-charcoal block">NT${{ b.amount.toLocaleString() }}</strong>
+                </div>
+                <button type="button" @click="openEditBudgetModal(b)" class="text-cq-muted hover:text-cq-charcoal p-1" title="編輯">
+                  <i class="fa-regular fa-pen-to-square text-xs"></i>
+                </button>
+                <button type="button" @click="deleteBudgetItem(b.id)" class="text-cq-muted hover:text-cq-cinnabar p-1" title="刪除">
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-xs text-cq-muted p-3 bg-cq-wash/40 rounded-xl text-center border border-dashed border-cq-border">
+          目前尚無個人限定項目。
         </div>
       </div>
     </section>
 
-    <!-- TAB 3: 美食備用 (Food / Snacks / Backup) -->
+    <!-- ==================== TAB 3: 美食備用 (Food / Snacks / Backup) ==================== -->
     <section v-show="activeTab === 'foodBackup'" class="space-y-4">
-      <!-- 三合一子標籤：推薦餐廳、飲品小吃、備用口袋景點 -->
+      <!-- 三合一子導覽標籤 -->
       <div class="flex p-1 bg-white rounded-2xl border border-cq-border text-xs font-medium shadow-sm">
         <button 
           type="button"
@@ -639,7 +832,6 @@
               </div>
             </div>
 
-            <!-- 地址與操作連結 -->
             <div v-if="food.address" class="mt-2.5 flex items-center justify-between gap-2">
               <div class="flex items-center justify-between space-x-1.5 text-cq-charcoal/80 flex-1 leading-snug bg-cq-wash/80 p-2 rounded-xl border border-cq-border/70 min-w-0">
                 <div class="flex items-start space-x-1.5 min-w-0 flex-1">
@@ -689,17 +881,17 @@
             </div>
           </div>
         </div>
-
-        <!-- 推薦餐廳空狀態 -->
         <div v-else class="bg-white rounded-2xl p-6 border border-dashed border-cq-border text-center space-y-2">
           <div class="w-10 h-10 rounded-full bg-cq-wash border border-cq-border flex items-center justify-center mx-auto text-cq-muted">
             <i class="fa-solid fa-utensils text-base"></i>
           </div>
-          <p class="text-xs text-cq-muted">尚無推薦餐廳，點擊右上角「新增餐廳」開始建立口袋名單！</p>
+          <div class="text-xs text-cq-muted">
+            目前尚無推薦餐廳，點擊上方按鈕開始新增！
+          </div>
         </div>
       </div>
 
-      <!-- 子頁面 2: 飲品小吃 (含 URL 官網連結支援) -->
+      <!-- 子頁面 2: 飲品小吃 (支援官網/購買連結) -->
       <div v-show="foodSubTab === 'snacks'" class="space-y-3">
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div class="flex space-x-1 text-xs font-mono overflow-x-auto no-scrollbar py-0.5">
@@ -798,37 +990,40 @@
               </p>
             </div>
 
-            <!-- 連結按鈕 (若有填寫 URL 則呈現) -->
-            <div v-if="item.linkUrl" class="mt-2.5 flex items-center justify-end">
-              <a 
-                :href="item.linkUrl" 
-                target="_blank" 
-                class="flex-shrink-0 px-2.5 py-1.5 rounded-xl bg-cq-goldLight text-cq-gold border border-cq-gold/30 hover:bg-cq-gold hover:text-white transition text-[11px] font-serif-cq font-bold shadow-xs active:scale-95 flex items-center space-x-1"
-                title="商品 / 官網連結"
-              >
-                <i class="fa-solid fa-ticket-simple text-[10px]"></i>
-                <span>商品/官網連結</span>
-                <i class="fa-solid fa-arrow-up-right-from-square text-[8px] opacity-75"></i>
-              </a>
-            </div>
+            <!-- 連結與操作列 -->
+            <div class="flex items-center justify-between text-cq-muted text-xs pt-2 mt-2 border-t border-cq-border/40">
+              <div>
+                <a 
+                  v-if="item.linkUrl"
+                  :href="item.linkUrl" 
+                  target="_blank" 
+                  class="px-2 py-1 rounded-lg bg-cq-goldLight text-cq-gold border border-cq-gold/30 hover:bg-cq-gold hover:text-white transition text-[10px] font-serif-cq font-bold shadow-xs active:scale-95 inline-flex items-center space-x-1"
+                  title="線上團購/官網連結"
+                >
+                  <i class="fa-solid fa-ticket-simple text-[9px]"></i>
+                  <span>線上團購/商品連結</span>
+                  <i class="fa-solid fa-arrow-up-right-from-square text-[8px] opacity-75"></i>
+                </a>
+              </div>
 
-            <div class="flex justify-end space-x-2 text-cq-muted text-xs pt-1 mt-2 border-t border-cq-border/40">
-              <button type="button" @click="openEditSnackModal(item)" class="hover:text-cq-charcoal p-0.5" title="編輯">
-                <i class="fa-regular fa-pen-to-square"></i>
-              </button>
-              <button type="button" @click="deleteSnack(item.id)" class="hover:text-cq-cinnabar p-0.5" title="刪除">
-                <i class="fa-regular fa-trash-can"></i>
-              </button>
+              <div class="flex space-x-2">
+                <button type="button" @click="openEditSnackModal(item)" class="hover:text-cq-charcoal p-0.5" title="編輯">
+                  <i class="fa-regular fa-pen-to-square"></i>
+                </button>
+                <button type="button" @click="deleteSnack(item.id)" class="hover:text-cq-cinnabar p-0.5" title="刪除">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
-        <!-- 飲品小吃空狀態 -->
         <div v-else class="bg-white rounded-2xl p-6 border border-dashed border-cq-border text-center space-y-2">
           <div class="w-10 h-10 rounded-full bg-cq-wash border border-cq-border flex items-center justify-center mx-auto text-cq-muted">
             <i class="fa-solid fa-mug-saucer text-base"></i>
           </div>
-          <p class="text-xs text-cq-muted">尚無飲品小吃項目，點擊右上角「新增」開始收錄！</p>
+          <div class="text-xs text-cq-muted">
+            目前尚無飲品小吃，點擊上方按鈕開始新增！
+          </div>
         </div>
       </div>
 
@@ -877,27 +1072,27 @@
             </div>
           </div>
         </div>
-
-        <!-- 備用景點空狀態 -->
         <div v-else class="bg-white rounded-2xl p-6 border border-dashed border-cq-border text-center space-y-2">
           <div class="w-10 h-10 rounded-full bg-cq-wash border border-cq-border flex items-center justify-center mx-auto text-cq-muted">
             <i class="fa-solid fa-map-location-dot text-base"></i>
           </div>
-          <p class="text-xs text-cq-muted">尚無備用景點，點擊右上角「新增景點」建立備案！</p>
+          <div class="text-xs text-cq-muted">
+            目前尚無備用景點，點擊上方按鈕開始新增！
+          </div>
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- 底部固定導覽列 (3 大核心分頁：記帳、預算、美食備用) -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-cq-border py-2 px-4 safe-bottom w-full shadow-lg">
+  <!-- 底部固定導覽列 (3 分頁) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-cq-border py-2 px-6 safe-bottom w-full shadow-lg">
     <div class="max-w-2xl mx-auto grid grid-cols-3 text-center">
       <button 
         type="button"
-        @click="activeTab = 'expense'" 
+        @click="switchTab('expenses')" 
         class="flex flex-col items-center py-1 transition"
-        :class="activeTab === 'expense' ? 'text-cq-cinnabar font-bold' : 'text-cq-muted'"
+        :class="activeTab === 'expenses' ? 'text-cq-cinnabar font-bold' : 'text-cq-muted'"
       >
         <i class="fa-solid fa-receipt text-base mb-1"></i>
         <span class="text-[11px] font-serif-cq">記帳</span>
@@ -905,7 +1100,7 @@
 
       <button 
         type="button"
-        @click="activeTab = 'budget'" 
+        @click="switchTab('budget')" 
         class="flex flex-col items-center py-1 transition"
         :class="activeTab === 'budget' ? 'text-cq-cinnabar font-bold' : 'text-cq-muted'"
       >
@@ -915,7 +1110,7 @@
 
       <button 
         type="button"
-        @click="activeTab = 'foodBackup'" 
+        @click="switchTab('foodBackup')" 
         class="flex flex-col items-center py-1 transition"
         :class="activeTab === 'foodBackup' ? 'text-cq-cinnabar font-bold' : 'text-cq-muted'"
       >
@@ -994,9 +1189,9 @@
     </div>
   </div>
 
-  <!-- 彈窗 (A): 貨幣切換與即時匯率 Modal -->
+  <!-- 彈窗 (B): 貨幣切換與即時匯率 Modal -->
   <div v-if="modalCurrency.isOpen" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-5 w-full max-w-sm border border-cq-border shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-3xl p-5 w-full max-w-sm border border-cq-border shadow-xl space-y-4">
       <div class="flex justify-between items-center">
         <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal flex items-center space-x-1.5">
           <i class="fa-solid fa-coins text-cq-gold"></i>
@@ -1008,7 +1203,7 @@
       </div>
 
       <div class="space-y-1.5">
-        <label class="block text-[11px] text-cq-muted font-medium">常用旅遊幣別：</label>
+        <label class="block text-[11px] text-cq-muted font-medium">常見旅遊幣別：</label>
         <div class="grid grid-cols-3 gap-2">
           <button 
             type="button"
@@ -1032,12 +1227,12 @@
         </div>
       </div>
 
-      <!-- 自訂新增幣別 -->
+      <!-- 自訂新增幣別區塊 -->
       <div class="p-3 bg-cq-wash/70 rounded-2xl border border-cq-border space-y-2">
         <label class="block text-[11px] text-cq-muted font-medium flex items-center justify-between">
           <span class="flex items-center space-x-1">
             <i class="fa-solid fa-plus text-cq-gold text-[10px]"></i>
-            <span>自訂新增其他幣別</span>
+            <span>自訂新增其他幣別 (即時連線)</span>
           </span>
           <span class="text-[9px] text-cq-muted font-mono">支援 160+ 幣別</span>
         </label>
@@ -1048,20 +1243,20 @@
             v-model="customCurrencyForm.code" 
             @input="customCurrencyForm.code = customCurrencyForm.code.toUpperCase().trim()"
             maxlength="4"
-            placeholder="代碼(如SGD)" 
+            placeholder="代碼 (SGD)" 
             class="px-2 py-1.5 rounded-xl border border-cq-border bg-white text-cq-charcoal font-mono uppercase text-xs focus:outline-none focus:border-cq-gold font-bold"
           >
           <input 
             type="text" 
             v-model="customCurrencyForm.symbol" 
             maxlength="4"
-            placeholder="符號(如S$)" 
+            placeholder="符號 (S$)" 
             class="px-2 py-1.5 rounded-xl border border-cq-border bg-white text-cq-charcoal font-mono text-xs focus:outline-none focus:border-cq-gold"
           >
           <input 
             type="text" 
             v-model="customCurrencyForm.name" 
-            placeholder="名稱(新幣)" 
+            placeholder="名稱 (新幣)" 
             class="px-2 py-1.5 rounded-xl border border-cq-border bg-white text-cq-charcoal text-xs focus:outline-none focus:border-cq-gold"
           >
         </div>
@@ -1074,7 +1269,7 @@
         >
           <i v-if="isFetchingCustomRate" class="fa-solid fa-spinner fa-spin text-[10px]"></i>
           <i v-else class="fa-solid fa-cloud-arrow-down text-[10px] text-cq-gold"></i>
-          <span>{{ isFetchingCustomRate ? '正在連線獲取最新匯率...' : '新增並連線更新匯率' }}</span>
+          <span>{{ isFetchingCustomRate ? '正在連線獲取即時匯率...' : '新增並更新即時匯率' }}</span>
         </button>
         <p v-if="customCurrencyError" class="text-[10px] text-cq-cinnabar font-medium">{{ customCurrencyError }}</p>
       </div>
@@ -1101,13 +1296,13 @@
     </div>
   </div>
 
-  <!-- 彈窗 (B): 設定外幣預算上限 Modal -->
+  <!-- 彈窗 (C1): 設定個人預算上限 Modal (外幣為主) -->
   <div v-if="modalBudgetCap.isOpen" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-5 w-full max-w-xs border border-cq-border shadow-xl space-y-3">
+    <div class="bg-white rounded-3xl p-5 w-full max-w-xs border border-cq-border shadow-xl space-y-4">
       <div class="flex justify-between items-center">
         <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal flex items-center space-x-1.5">
-          <i class="fa-solid fa-sliders text-cq-cinnabar"></i>
-          <span>設定個人預算上限</span>
+          <i class="fa-solid fa-sliders text-cq-gold"></i>
+          <span>設定個人外幣預算上限</span>
         </h3>
         <button type="button" @click="modalBudgetCap.isOpen = false" class="text-cq-muted hover:text-cq-charcoal text-xs">
           <i class="fa-solid fa-xmark"></i>
@@ -1118,36 +1313,45 @@
         <div>
           <label class="block text-cq-muted mb-1 font-medium">個人外幣預算上限 ({{ currentCurrency.code }})</label>
           <div class="relative">
-            <span class="absolute left-3 top-2 font-mono text-cq-muted font-bold">{{ currentCurrency.symbol }}</span>
+            <span class="absolute left-3 top-2.5 font-mono font-bold text-cq-charcoal">{{ currentCurrency.symbol }}</span>
             <input 
               type="number" 
               v-model.number="modalBudgetCap.amount" 
-              placeholder="例如: 6500" 
-              class="w-full pl-8 pr-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-mono font-bold text-base focus:outline-none focus:border-cq-cinnabar"
+              placeholder="0"
+              class="w-full pl-8 pr-3 py-2 rounded-xl border border-cq-border bg-cq-wash font-mono font-bold text-sm text-cq-charcoal focus:outline-none focus:border-cq-gold"
             >
           </div>
-        </div>
-
-        <div class="p-2.5 bg-cq-wash/80 rounded-xl border border-cq-border text-xs font-mono space-y-1">
-          <span class="text-[10px] text-cq-muted block">依目前匯率折算新台幣：</span>
-          <strong class="text-cq-charcoal block">≈ NT${{ Math.round((modalBudgetCap.amount || 0) * exchangeRate).toLocaleString() }}</strong>
+          <span class="block text-[10px] font-mono text-cq-muted mt-1">
+            ≈ NT${{ Math.round((modalBudgetCap.amount || 0) * exchangeRate).toLocaleString() }} (當前匯率 1:{{ exchangeRate.toFixed(2) }})
+          </span>
         </div>
 
         <div class="flex space-x-2 pt-2">
-          <button type="button" @click="modalBudgetCap.isOpen = false" class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium">取消</button>
-          <button type="button" @click="submitSaveBudgetCap" class="flex-1 py-2.5 rounded-xl bg-cq-charcoal text-white font-medium">確認設定</button>
+          <button 
+            type="button" 
+            @click="modalBudgetCap.isOpen = false" 
+            class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium hover:bg-cq-wash"
+          >
+            取消
+          </button>
+          <button 
+            type="button" 
+            @click="submitSaveBudgetCap" 
+            class="flex-1 py-2.5 rounded-xl bg-cq-charcoal hover:bg-black text-white font-medium active:scale-95 transition"
+          >
+            確認更新
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 彈窗 (C): 消費紀錄 新增/編輯 Modal (信用卡雙幣手動填寫、不自動換算) -->
+  <!-- 彈窗 (C2): 消費紀錄 新增/編輯 Modal (信用卡雙幣自填且不自動折算) -->
   <div v-if="modalExpense.isOpen" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-sm border border-cq-border shadow-xl space-y-3 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal flex items-center space-x-1.5">
-          <i class="fa-solid fa-receipt text-cq-cinnabar"></i>
-          <span>{{ modalExpense.isEdit ? '編輯消費支出' : '記一筆消費支出' }}</span>
+        <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">
+          {{ modalExpense.isEdit ? '編輯消費紀錄' : '記一筆消費支出' }}
         </h3>
         <button type="button" @click="modalExpense.isOpen = false" class="text-cq-muted hover:text-cq-charcoal text-xs">
           <i class="fa-solid fa-xmark"></i>
@@ -1160,139 +1364,112 @@
           <input 
             type="text" 
             v-model="modalExpense.form.title" 
-            placeholder="例如: 老火鍋雙人晚餐、地鐵票、特產零嘴" 
-            class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium focus:outline-none focus:border-cq-cinnabar"
+            placeholder="例如: 老火鍋、伴手禮、地鐵票" 
+            class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium"
           >
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-cq-muted mb-1 font-medium">消費分類</label>
-            <select v-model="modalExpense.form.category" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
-              <option value="餐飲美食">餐飲美食</option>
-              <option value="購物採買">購物採買</option>
-              <option value="交通出行">交通出行</option>
-              <option value="門票體驗">門票體驗</option>
-              <option value="住宿花費">住宿花費</option>
-              <option value="其他支出">其他支出</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-cq-muted mb-1 font-medium">支付方式</label>
-            <select v-model="modalExpense.form.paymentMethod" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
-              <option value="cash">現金 (扣抵預算)</option>
-              <option value="card">信用卡 (獨立統計)</option>
-            </select>
+        <!-- 支付方式選擇 -->
+        <div>
+          <label class="block text-cq-muted mb-1 font-medium">支付方式</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button 
+              type="button"
+              @click="modalExpense.form.paymentMethod = 'cash'"
+              class="py-2 rounded-xl border text-center font-medium transition"
+              :class="modalExpense.form.paymentMethod === 'cash' ? 'bg-cq-moss text-white border-cq-moss shadow-xs' : 'bg-cq-wash text-cq-charcoal border-cq-border'"
+            >
+              現金 (扣抵預算)
+            </button>
+            <button 
+              type="button"
+              @click="modalExpense.form.paymentMethod = 'credit'"
+              class="py-2 rounded-xl border text-center font-medium transition"
+              :class="modalExpense.form.paymentMethod === 'credit' ? 'bg-cq-gold text-white border-cq-gold shadow-xs' : 'bg-cq-wash text-cq-charcoal border-cq-border'"
+            >
+              信用卡 (獨立統計)
+            </button>
           </div>
         </div>
 
-        <!-- 金額輸入區塊 -->
-        <!-- 情況 A: 現金扣抵預算 (輸入外幣，依匯率自動換算台幣) -->
+        <!-- 金額輸入區：依現金或信用卡不同呈現 -->
+        <!-- 狀況 A: 現金 (輸入外幣，依匯率自動換算台幣) -->
         <div v-if="modalExpense.form.paymentMethod === 'cash'" class="space-y-2">
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-cq-muted mb-1 font-medium">外幣金額 ({{ currentCurrency.code }})</label>
-              <div class="relative">
-                <span class="absolute left-3 top-2 font-mono text-cq-muted font-bold">{{ currentCurrency.symbol }}</span>
-                <input 
-                  type="number" 
-                  v-model.number="modalExpense.form.originalAmount" 
-                  @input="onCashOriginalAmountChange"
-                  placeholder="0.0" 
-                  class="w-full pl-7 pr-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-mono font-bold focus:outline-none focus:border-cq-cinnabar"
-                >
-              </div>
-            </div>
-            <div>
-              <label class="block text-cq-muted mb-1 font-medium">折合扣抵台幣 (NT$)</label>
+              <label class="block text-cq-muted mb-1 font-medium">外幣金額 ({{ currentCurrency.symbol }} {{ currentCurrency.code }})</label>
               <input 
                 type="number" 
-                v-model.number="modalExpense.form.twdAmount" 
-                placeholder="自動折算" 
-                class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash/60 text-cq-charcoal font-mono font-bold"
+                v-model.number="modalExpense.form.amountForeign" 
+                @input="onCashForeignInput"
+                placeholder="0.0" 
+                class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-mono font-bold"
+              >
+            </div>
+            <div>
+              <label class="block text-cq-muted mb-1 font-medium">折合台幣 (TWD)</label>
+              <input 
+                type="number" 
+                v-model.number="modalExpense.form.amountTwd" 
+                readonly
+                class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash/50 text-cq-muted font-mono font-bold"
               >
             </div>
           </div>
-          <span class="text-[10px] text-cq-muted block font-mono">
-            ★ 現金消費將直接自個人外幣預算額度中扣除 (匯率 1:{{ exchangeRate.toFixed(2) }})
-          </span>
+          <span class="block text-[10px] text-cq-moss font-mono">★ 此筆支出將從「個人外幣預算餘額」中即時扣抵</span>
         </div>
 
-        <!-- 情況 B: 信用卡支付 (匯率不自動換算，同時提供外幣與台幣請款金額雙欄位) -->
-        <div v-else class="space-y-2 p-3 bg-cq-goldLight/60 rounded-2xl border border-cq-gold/30">
-          <div class="flex items-center justify-between text-cq-gold font-bold">
-            <span class="flex items-center space-x-1">
+        <!-- 狀況 B: 信用卡 (匯率不自動換算，同時提供手動填寫台幣及外幣金額) -->
+        <div v-else class="space-y-2.5 p-3 bg-cq-goldLight/40 rounded-2xl border border-cq-gold/30">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-cq-gold flex items-center space-x-1">
               <i class="fa-solid fa-credit-card"></i>
-              <span>信用卡海外簽帳 (手動填寫雙幣別)</span>
+              <span>信用卡海外交易明細 (不自動套用匯率)</span>
             </span>
-            <span class="text-[10px] font-sans font-normal opacity-90">匯率不自動換算</span>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-cq-charcoal font-medium text-[11px] mb-1">刷卡外幣金額</label>
+              <label class="block text-cq-charcoal mb-1 font-medium">刷卡外幣金額</label>
               <div class="relative">
-                <span class="absolute left-2.5 top-2 font-mono text-cq-muted font-bold">{{ currentCurrency.symbol }}</span>
+                <span class="absolute left-2.5 top-2 font-mono text-cq-muted">{{ currentCurrency.symbol }}</span>
                 <input 
                   type="number" 
-                  v-model.number="modalExpense.form.originalAmount" 
-                  placeholder="當地幣別" 
-                  class="w-full pl-7 pr-2.5 py-1.5 rounded-xl border border-cq-border bg-white text-cq-charcoal font-mono font-bold text-xs focus:outline-none focus:border-cq-gold"
+                  v-model.number="modalExpense.form.amountForeign" 
+                  placeholder="當地原幣" 
+                  class="w-full pl-7 pr-2 py-1.5 rounded-xl border border-cq-gold/40 bg-white text-cq-charcoal font-mono font-bold text-xs"
                 >
               </div>
             </div>
+
             <div>
-              <label class="block text-cq-charcoal font-medium text-[11px] mb-1">台幣請款/入帳 (NT$)</label>
-              <input 
-                type="number" 
-                v-model.number="modalExpense.form.twdAmount" 
-                @input="onCardTwdAmountChange"
-                placeholder="簡訊/帳單台幣" 
-                class="w-full px-2.5 py-1.5 rounded-xl border border-cq-border bg-white text-cq-charcoal font-mono font-bold text-xs focus:outline-none focus:border-cq-gold"
-              >
+              <label class="block text-cq-charcoal mb-1 font-medium">台幣請款 / 入帳金額</label>
+              <div class="relative">
+                <span class="absolute left-2.5 top-2 font-mono text-cq-muted">NT$</span>
+                <input 
+                  type="number" 
+                  v-model.number="modalExpense.form.amountTwd" 
+                  placeholder="帳單金額" 
+                  class="w-full pl-9 pr-2 py-1.5 rounded-xl border border-cq-gold/60 bg-white text-cq-gold font-mono font-bold text-xs"
+                >
+              </div>
             </div>
           </div>
 
-          <!-- 1.5% 海外交易手續費試算與勾選 -->
-          <div class="pt-1.5 border-t border-cq-gold/20 flex items-center justify-between">
-            <label class="flex items-center space-x-1.5 text-[11px] text-cq-charcoal cursor-pointer">
-              <input 
-                type="checkbox" 
-                v-model="modalExpense.form.includeForeignFee"
-                @change="onCardTwdAmountChange"
-                class="rounded border-cq-border text-cq-gold focus:ring-cq-gold"
-              >
-              <span>計入約 1.5% 海外手續費</span>
-            </label>
-            <span class="font-mono text-cq-cinnabar font-bold text-xs">
-              + NT${{ modalExpense.form.feeTwd || 0 }}
-            </span>
+          <!-- 預估手續費試算卡片 -->
+          <div class="p-2 bg-white/80 rounded-xl border border-cq-gold/20 flex justify-between items-center text-[11px] font-mono">
+            <span class="text-cq-muted">海外手續費 (1.5%):</span>
+            <strong class="text-cq-charcoal">+ NT${{ Math.round((modalExpense.form.amountTwd || 0) * 0.015) }}</strong>
           </div>
-
-          <div class="flex justify-between items-center text-[11px] font-mono font-bold text-cq-charcoal pt-1">
-            <span>本筆刷卡總應付：</span>
-            <span class="text-cq-gold text-sm">
-              NT${{ ((modalExpense.form.twdAmount || 0) + (modalExpense.form.feeTwd || 0)).toLocaleString() }}
-            </span>
-          </div>
-        </div>
-
-        <!-- 日期時間 -->
-        <div>
-          <label class="block text-cq-muted mb-1 font-medium">消費時間</label>
-          <input 
-            type="datetime-local" 
-            v-model="modalExpense.form.datetime" 
-            class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-mono text-xs focus:outline-none focus:border-cq-cinnabar"
-          >
+          <span class="block text-[10px] text-cq-muted font-sans">★ 信用卡獨立統計海外應繳帳單，不扣抵個人現金旅遊預算</span>
         </div>
 
         <div>
-          <label class="block text-cq-muted mb-1 font-medium">備註或地點說明 (選填)</label>
+          <label class="block text-cq-muted mb-1 font-medium">備註或店家說明 (選填)</label>
           <textarea 
             v-model="modalExpense.form.notes" 
             rows="2" 
-            placeholder="店家名稱、分攤對象或特色心得..." 
+            placeholder="例如: 戴家巷店刷卡、或含超市採買禮品..." 
             class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal"
           ></textarea>
         </div>
@@ -1308,21 +1485,21 @@
           <button 
             type="button" 
             @click="submitSaveExpense" 
-            class="flex-1 py-2.5 rounded-xl bg-cq-charcoal hover:bg-black text-white font-medium active:scale-95 transition"
+            class="flex-1 py-2.5 rounded-xl bg-cq-charcoal text-white font-medium active:scale-95 transition"
           >
-            確認儲存支出
+            確認儲存
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 彈窗 (D): 預算項目 新增/編輯 Modal -->
+  <!-- 彈窗 (C3): 預算項目 新增/編輯 Modal -->
   <div v-if="modalBudget.isOpen" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-sm border border-cq-border shadow-xl space-y-3 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
         <h3 class="font-serif-cq font-bold text-sm text-cq-charcoal">
-          {{ modalBudget.isEdit ? '編輯預算規劃項目' : '新增預算規劃項目' }}
+          {{ modalBudget.isEdit ? '編輯預算項目' : '新增預算項目' }}
         </h3>
         <button type="button" @click="modalBudget.isOpen = false" class="text-cq-muted hover:text-cq-charcoal text-xs">
           <i class="fa-solid fa-xmark"></i>
@@ -1336,10 +1513,10 @@
             v-model="modalBudget.form.category" 
             class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium"
           >
-            <option :value="CATEGORY_KEYS.FIXED">固定大項開銷 (機票/住宿/保險/漫遊)</option>
+            <option :value="CATEGORY_KEYS.FIXED">固定大項開銷 (機票/住宿/交通/漫遊)</option>
             <option :value="CATEGORY_KEYS.TICKET">行程門票與體驗項目 (景點/包車/演藝)</option>
             <option :value="CATEGORY_KEYS.FOOD">餐食預估費用 (火鍋/正餐/小吃)</option>
-            <option :value="CATEGORY_KEYS.PERSONAL">個人限定項目 (寫真/私房採買/個人專屬)</option>
+            <option :value="CATEGORY_KEYS.PERSONAL">個人限定項目 (寫真/私房採買/個人開銷)</option>
           </select>
         </div>
 
@@ -1348,7 +1525,7 @@
           <input 
             type="text" 
             v-model="modalBudget.form.title" 
-            placeholder="例如: 機票、景觀民宿、景點門票、火鍋" 
+            placeholder="例如: 機票、住宿、景點門票、火鍋" 
             class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium"
           >
         </div>
@@ -1369,18 +1546,18 @@
               v-model="modalBudget.form.currency" 
               class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-mono font-bold"
             >
-              <option :value="currentCurrency.code">{{ currentCurrency.code }} (外幣 {{ currentCurrency.symbol }})</option>
+              <option :value="currentCurrency.code">{{ currentCurrency.code }} ({{ currentCurrency.symbol }})</option>
               <option value="TWD">TWD (新台幣 NT$)</option>
             </select>
           </div>
         </div>
 
         <div>
-          <label class="block text-cq-muted mb-1 font-medium">備註說明 (選填)</label>
+          <label class="block text-cq-muted mb-1 font-medium">備註或說明 (選填)</label>
           <textarea 
             v-model="modalBudget.form.notes" 
             rows="2" 
-            placeholder="例如: 含行李稅金、或早鳥預售優惠..." 
+            placeholder="例如: 含轉機稅金、或包含景點接駁車..." 
             class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal"
           ></textarea>
         </div>
@@ -1389,7 +1566,7 @@
           <button 
             type="button" 
             @click="modalBudget.isOpen = false" 
-            class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium"
+            class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium hover:bg-cq-wash"
           >
             取消
           </button>
@@ -1405,7 +1582,7 @@
     </div>
   </div>
 
-  <!-- 彈窗 (E): 推薦餐廳 新增/編輯 Modal -->
+  <!-- 彈窗 (3): 推薦餐廳 新增/編輯 彈窗 -->
   <div v-if="modalFood.isOpen" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-sm border border-cq-border shadow-xl space-y-3 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -1420,36 +1597,36 @@
       <div class="space-y-3 text-xs">
         <div>
           <label class="block text-cq-muted mb-1 font-medium">店名或菜色名稱</label>
-          <input type="text" v-model="modalFood.form.name" placeholder="例如: 十八梯小麵、老火鍋" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
+          <input type="text" v-model="modalFood.form.name" placeholder="例如: 十八梯邓凳面(总店)" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
         </div>
 
         <div>
           <label class="block text-cq-muted mb-1 font-medium">店家街道地址</label>
-          <input type="text" v-model="modalFood.form.address" placeholder="街道詳細門牌地址..." class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
+          <input type="text" v-model="modalFood.form.address" placeholder="例如: 渝中区潘家沟17号" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
         </div>
 
         <div>
-          <label class="block text-cq-muted mb-1 font-medium">推薦招牌菜色 (逗號分隔)</label>
-          <input type="text" v-model="modalFood.form.recommendationsStr" placeholder="招牌牛肉、手工蝦滑" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
+          <label class="block text-cq-muted mb-1 font-medium">推薦招牌菜色 (以逗號或頓號分隔)</label>
+          <input type="text" v-model="modalFood.form.recommendationsStr" placeholder="例如: 招牌豌雜麵、重慶小麵" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-cq-muted mb-1 font-medium">美食分類</label>
-            <input type="text" v-model="modalFood.form.category" placeholder="火鍋 / 小吃 / 正餐" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
+            <input type="text" v-model="modalFood.form.category" placeholder="火鍋 / 小吃 / 麵食" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
           </div>
           <div>
-            <label class="block text-cq-muted mb-1 font-medium">預估費用 ({{ currentCurrency.code }})</label>
+            <label class="block text-cq-muted mb-1 font-medium">預估費用 ({{ currentCurrency.symbol }} {{ currentCurrency.code }})</label>
             <input type="number" v-model.number="modalFood.form.priceCny" placeholder="80" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash font-mono font-bold text-cq-charcoal">
           </div>
         </div>
 
         <div>
-          <label class="block text-cq-muted mb-1 font-medium">購買 / 官網連結 URL (選填)</label>
+          <label class="block text-cq-muted mb-1 font-medium">購買 / 官網連結 URL (團購/商品連結)</label>
           <input 
             type="text" 
             v-model="modalFood.form.linkUrl" 
-            placeholder="https://..." 
+            placeholder="https://... (有填寫將顯示「線上團購」按鈕)" 
             class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-mono text-xs focus:outline-none focus:border-cq-cinnabar"
           >
         </div>
@@ -1460,14 +1637,14 @@
         </div>
 
         <div class="flex space-x-2 pt-2">
-          <button type="button" @click="modalFood.isOpen = false" class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium">取消</button>
-          <button type="button" @click="submitSaveFood" class="flex-1 py-2.5 rounded-xl bg-cq-charcoal text-white font-medium">儲存</button>
+          <button type="button" @click="modalFood.isOpen = false" class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium hover:bg-cq-wash">取消</button>
+          <button type="button" @click="submitSaveFood" class="flex-1 py-2.5 rounded-xl bg-cq-charcoal text-white font-medium active:scale-95 transition">儲存</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 彈窗 (F): 飲品小吃 新增/編輯 Modal (含 URL 支援) -->
+  <!-- 彈窗 (4): 飲品小吃 新增/編輯 彈窗 (支援 URL 欄位) -->
   <div v-if="modalSnack.isOpen" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-sm border border-cq-border shadow-xl space-y-3 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -1482,7 +1659,7 @@
       <div class="space-y-3 text-xs">
         <div>
           <label class="block text-cq-muted mb-1 font-medium">品牌或名稱</label>
-          <input type="text" v-model="modalSnack.form.name" placeholder="例如: 人氣手搖茶飲 / 特色烤物" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
+          <input type="text" v-model="modalSnack.form.name" placeholder="例如: 茶顏悅色 / 重慶烤苕皮" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
         </div>
 
         <div>
@@ -1495,8 +1672,8 @@
         </div>
 
         <div>
-          <label class="block text-cq-muted mb-1 font-medium">推薦品項 (以逗號分隔)</label>
-          <input type="text" v-model="modalSnack.form.recommendationsStr" placeholder="招牌鮮奶茶、烤豆干" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal">
+          <label class="block text-cq-muted mb-1 font-medium">必點推薦品項 (以逗號或頓號分隔)</label>
+          <input type="text" v-model="modalSnack.form.recommendationsStr" placeholder="幽蘭拿鐵、聲聲烏龍 或 招牌烤苕皮" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal">
         </div>
 
         <div>
@@ -1504,25 +1681,25 @@
           <input 
             type="text" 
             v-model="modalSnack.form.linkUrl" 
-            placeholder="https://..." 
-            class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-mono text-xs focus:outline-none focus:border-cq-cinnabar"
+            placeholder="https://... (有填寫將顯示「線上團購/商品連結」)" 
+            class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-mono text-xs focus:outline-none focus:border-cq-gold"
           >
         </div>
 
         <div>
           <label class="block text-cq-muted mb-1 font-medium">描述或購買小提示</label>
-          <textarea v-model="modalSnack.form.description" rows="2" placeholder="推薦口味..." class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal"></textarea>
+          <textarea v-model="modalSnack.form.description" rows="2" placeholder="推薦口味或購買地點小提醒..." class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal"></textarea>
         </div>
 
         <div class="flex space-x-2 pt-2">
-          <button type="button" @click="modalSnack.isOpen = false" class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium">取消</button>
-          <button type="button" @click="submitSaveSnack" class="flex-1 py-2.5 rounded-xl bg-cq-charcoal text-white font-medium">儲存</button>
+          <button type="button" @click="modalSnack.isOpen = false" class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium hover:bg-cq-wash">取消</button>
+          <button type="button" @click="submitSaveSnack" class="flex-1 py-2.5 rounded-xl bg-cq-charcoal text-white font-medium active:scale-95 transition">儲存</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 彈窗 (G): 備用口袋景點 Modal -->
+  <!-- 彈窗 (5): 備用口袋景點 Modal -->
   <div v-if="modalBackup.isOpen" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-sm border border-cq-border shadow-xl space-y-3 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -1537,17 +1714,17 @@
       <div class="space-y-3 text-xs">
         <div>
           <label class="block text-cq-muted mb-1 font-medium">景點名稱</label>
-          <input type="text" v-model="modalBackup.form.name" placeholder="例如: 濱江綠意公園" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
+          <input type="text" v-model="modalBackup.form.name" placeholder="例如: 李子壩抗戰遺址公園" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-cq-muted mb-1 font-medium">標籤</label>
-            <input type="text" v-model="modalBackup.form.tag" placeholder="雨天備案 / 視野佳" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
+            <input type="text" v-model="modalBackup.form.tag" placeholder="雨天備案 / 視野絕佳" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
           </div>
           <div>
             <label class="block text-cq-muted mb-1 font-medium">建議停留時間</label>
-            <input type="text" v-model="modalBackup.form.duration" placeholder="1小時" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
+            <input type="text" v-model="modalBackup.form.duration" placeholder="1～1.5小時" class="w-full px-3 py-2 rounded-xl border border-cq-border bg-cq-wash text-cq-charcoal font-medium">
           </div>
         </div>
 
@@ -1557,8 +1734,8 @@
         </div>
 
         <div class="flex space-x-2 pt-2">
-          <button type="button" @click="modalBackup.isOpen = false" class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium">取消</button>
-          <button type="button" @click="submitSaveBackup" class="flex-1 py-2.5 rounded-xl bg-cq-charcoal text-white font-medium">儲存</button>
+          <button type="button" @click="modalBackup.isOpen = false" class="flex-1 py-2.5 rounded-xl border border-cq-border text-cq-muted font-medium hover:bg-cq-wash">取消</button>
+          <button type="button" @click="submitSaveBackup" class="flex-1 py-2.5 rounded-xl bg-cq-charcoal text-white font-medium active:scale-95 transition">儲存</button>
         </div>
       </div>
     </div>
@@ -1588,7 +1765,7 @@
 
   const startApp = () => {
     if (typeof Vue === 'undefined') {
-      setTimeout(startApp, 50);
+      setTimeout(startApp, 60);
       return;
     }
 
@@ -1596,10 +1773,10 @@
 
     createApp({
       setup() {
-        const activeTab = ref('expense');
+        const activeTab = ref('expenses'); // 預設首頁為「記帳」
         const foodSubTab = ref('food');
 
-        // ==================== 1. 旅遊主題與日程標記 ====================
+        // ==================== 1. 旅遊主題與日程標記自訂 ====================
         const LOCAL_KEY_TRIP_META = 'cq_trip_meta_v3';
         let initialMeta = {
           title: '旅遊記帳',
@@ -1611,17 +1788,19 @@
         try {
           const cachedMeta = localStorage.getItem(LOCAL_KEY_TRIP_META);
           if (cachedMeta) {
-            const parsed = JSON.parse(cachedMeta);
-            if (parsed && typeof parsed.title === 'string' && parsed.title.trim()) {
+            const parsedMeta = JSON.parse(cachedMeta);
+            if (parsedMeta && typeof parsedMeta.title === 'string' && parsedMeta.title.trim()) {
               initialMeta = {
-                title: parsed.title.trim() || '旅遊記帳',
-                startDate: parsed.startDate || '2026-10-27',
-                endDate: parsed.endDate || '2026-11-03',
-                scheduleNote: parsed.scheduleNote || '2026.10.27 - 11.03 · 8天7夜'
+                title: parsedMeta.title.trim() || '旅遊記帳',
+                startDate: parsedMeta.startDate || '2026-10-27',
+                endDate: parsedMeta.endDate || '2026-11-03',
+                scheduleNote: parsedMeta.scheduleNote || '2026.10.27 - 11.03 · 8天7夜'
               };
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('無法讀取本地主題快取', e);
+        }
 
         const tripMeta = reactive({
           title: initialMeta.title,
@@ -1632,7 +1811,11 @@
 
         const modalTripTitle = reactive({
           isOpen: false,
-          form: { title: '', startDate: '', endDate: '' }
+          form: {
+            title: '',
+            startDate: '',
+            endDate: ''
+          }
         });
 
         const computedSchedulePreview = computed(() => {
@@ -1657,18 +1840,21 @@
 
         const submitSaveTripTitle = () => {
           const newTitle = (modalTripTitle.form.title || '').trim() || '旅遊記帳';
-          tripMeta.title = newTitle;
-          tripMeta.startDate = modalTripTitle.form.startDate;
-          tripMeta.endDate = modalTripTitle.form.endDate;
+          const start = modalTripTitle.form.startDate;
+          const end = modalTripTitle.form.endDate;
 
-          if (tripMeta.startDate && tripMeta.endDate) {
-            const s = new Date(tripMeta.startDate);
-            const e = new Date(tripMeta.endDate);
+          tripMeta.title = newTitle;
+          tripMeta.startDate = start;
+          tripMeta.endDate = end;
+
+          if (start && end) {
+            const s = new Date(start);
+            const e = new Date(end);
             const diffMs = e.getTime() - s.getTime();
             if (diffMs >= 0) {
               const days = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
               const nights = Math.max(0, days - 1);
-              tripMeta.scheduleNote = `${tripMeta.startDate.replace(/-/g, '.')} - ${tripMeta.endDate.replace(/-/g, '.')} · ${days}天${nights}夜`;
+              tripMeta.scheduleNote = `${start.replace(/-/g, '.')} - ${end.replace(/-/g, '.')} · ${days}天${nights}夜`;
             }
           }
 
@@ -1678,11 +1864,13 @@
 
           document.title = `${newTitle} · 旅遊記帳`;
           modalTripTitle.isOpen = false;
-          showToast('旅遊主題已更新');
+          showToast('旅遊主題與日程已儲存！');
         };
 
         watch(() => tripMeta.title, (newTitle) => {
-          if (newTitle) document.title = `${newTitle} · 旅遊記帳`;
+          if (newTitle) {
+            document.title = `${newTitle} · 旅遊記帳`;
+          }
         }, { immediate: true });
 
         // ==================== 2. 貨幣與即時匯率系統 ====================
@@ -1696,7 +1884,7 @@
           { code: 'USD', symbol: '$', name: '美元' },
           { code: 'EUR', symbol: '€', name: '歐元' },
           { code: 'HKD', symbol: 'HK$', name: '港幣' },
-          { code: 'SGD', symbol: 'S$', name: '新加坡幣' }
+          { code: 'TWD', symbol: 'NT$', name: '新台幣' }
         ];
 
         let storedCustomCurrencies = [];
@@ -1714,9 +1902,9 @@
         const isFetchingCustomRate = ref(false);
         const customCurrencyError = ref('');
 
-        const openCurrencyModal = () => {
+        const openCurrencyModal = () => { 
           customCurrencyError.value = '';
-          modalCurrency.isOpen = true;
+          modalCurrency.isOpen = true; 
         };
 
         const selectCurrency = (curr) => {
@@ -1729,11 +1917,11 @@
           customCurrencyError.value = '';
           const code = (customCurrencyForm.code || '').toUpperCase().trim();
           if (!code || code.length < 3) {
-            customCurrencyError.value = '請輸入標準 3 碼貨幣代號 (例如 SGD, AUD, GBP)';
+            customCurrencyError.value = '請輸入標準 3 碼貨幣代號 (例如 SGD, GBP, AUD)';
             return;
           }
           if (availableCurrencies.value.some(c => c.code === code)) {
-            customCurrencyError.value = `代碼 ${code} 已存在於列表中`;
+            customCurrencyError.value = `貨幣代碼 ${code} 已存在於列表中`;
             return;
           }
 
@@ -1754,20 +1942,20 @@
             };
 
             availableCurrencies.value.push(newCurr);
+            const customList = availableCurrencies.value.filter(c => c.isCustom);
             try {
-              const customList = availableCurrencies.value.filter(c => c.isCustom);
               localStorage.setItem(LOCAL_KEY_CUSTOM_CURRENCIES, JSON.stringify(customList));
             } catch (e) {}
 
             currentCurrency.value = newCurr;
             exchangeRate.value = liveRate;
+
             customCurrencyForm.code = '';
             customCurrencyForm.symbol = '';
             customCurrencyForm.name = '';
-
-            showToast(`成功新增 ${code}！即時匯率：1 ${code} ≈ ${liveRate.toFixed(2)} TWD`);
+            showToast(`成功新增 ${code}！即時匯率：1 ${code} ≈ ${liveRate.toFixed(4)} TWD`);
           } catch (err) {
-            customCurrencyError.value = '查詢失敗，請檢查代碼或網路';
+            customCurrencyError.value = `連線查詢失敗，請確認代碼是否正確 (如 SGD, AUD, MYR)`;
           } finally {
             isFetchingCustomRate.value = false;
           }
@@ -1775,8 +1963,8 @@
 
         const removeCustomCurrency = (code) => {
           availableCurrencies.value = availableCurrencies.value.filter(c => c.code !== code);
+          const customList = availableCurrencies.value.filter(c => c.isCustom);
           try {
-            const customList = availableCurrencies.value.filter(c => c.isCustom);
             localStorage.setItem(LOCAL_KEY_CUSTOM_CURRENCIES, JSON.stringify(customList));
           } catch (e) {}
 
@@ -1801,16 +1989,16 @@
               if (showNotification) showToast(`已更新匯率：1 ${currentCurrency.value.code} ≈ ${exchangeRate.value.toFixed(2)} TWD`);
             }
           } catch (e) {
-            console.warn('匯率連線保留預估值');
+            console.warn('匯率連線保留預設數值');
           }
         };
 
         // ==================== 3. 記帳系統與個人旅遊預算監控 ====================
-        // 個人外幣預算上限
-        const budgetCapForeign = ref(6500);
+        // 個人外幣預算上限 (預設為 0)
+        const budgetCapForeign = ref(0);
         const modalBudgetCap = reactive({
           isOpen: false,
-          amount: 6500
+          amount: 0
         });
 
         const openEditBudgetCapModal = () => {
@@ -1819,104 +2007,81 @@
         };
 
         const submitSaveBudgetCap = () => {
-          if (!modalBudgetCap.amount || modalBudgetCap.amount <= 0) {
-            showToast('請輸入有效的預算上限');
-            return;
-          }
-          budgetCapForeign.value = parseFloat(modalBudgetCap.amount);
+          budgetCapForeign.value = Math.max(0, parseFloat(modalBudgetCap.amount) || 0);
           modalBudgetCap.isOpen = false;
-          showToast('個人外幣預算上限已更新');
+          showToast(`個人外幣預算上限已設定為 ${currentCurrency.value.symbol}${budgetCapForeign.value.toLocaleString()} ${currentCurrency.value.code}`);
         };
 
-        // 消費支出紀錄列表（起始預設為 0 筆空陣列）
+        // 消費紀錄清單 (起始為 0 筆)
         const expenseItems = ref([]);
 
-        const expenseFilterMethod = ref('ALL');
+        const expenseFilter = ref('all'); // all, cash, credit
 
-        // 現金/信用卡統計
-        const cashExpenseItems = computed(() => expenseItems.value.filter(e => e.paymentMethod === 'cash'));
-        const cardExpenseItems = computed(() => expenseItems.value.filter(e => e.paymentMethod === 'card'));
-        const cashExpenseCount = computed(() => cashExpenseItems.value.length);
-
-        const filteredExpenseItems = computed(() => {
-          if (expenseFilterMethod.value === 'cash') return cashExpenseItems.value;
-          if (expenseFilterMethod.value === 'card') return cardExpenseItems.value;
-          return expenseItems.value;
+        const filteredExpenses = computed(() => {
+          if (expenseFilter.value === 'all') return expenseItems.value;
+          return expenseItems.value.filter(item => item.paymentMethod === expenseFilter.value);
         });
 
-        // 扣抵預算之已支出 (以現金支出為主扣除)
+        // 現金支出總計 (折算外幣與台幣，用於扣抵個人外幣預算)
         const totalCashExpenseForeign = computed(() => {
-          return cashExpenseItems.value.reduce((sum, item) => sum + (Number(item.originalAmount) || 0), 0);
+          return expenseItems.value
+            .filter(item => item.paymentMethod === 'cash')
+            .reduce((sum, item) => sum + (item.amountForeign || 0), 0);
         });
 
         const totalCashExpenseTwd = computed(() => {
-          return cashExpenseItems.value.reduce((sum, item) => sum + (Number(item.twdAmount) || 0), 0);
+          return expenseItems.value
+            .filter(item => item.paymentMethod === 'cash')
+            .reduce((sum, item) => sum + (item.amountTwd || 0), 0);
         });
 
-        // 剩餘外幣預算
+        // 剩餘個人外幣預算額度
         const remainingBudgetForeign = computed(() => {
           return budgetCapForeign.value - totalCashExpenseForeign.value;
         });
 
         // 預算消耗百分比
-        const budgetUsagePercent = computed(() => {
+        const budgetUsagePercentage = computed(() => {
           if (budgetCapForeign.value <= 0) return 0;
-          return (totalCashExpenseForeign.value / budgetCapForeign.value) * 100;
+          return Math.round((totalCashExpenseForeign.value / budgetCapForeign.value) * 100);
         });
 
-        // 信用卡獨立統計 (台幣為主)
-        const totalCardAmountTwd = computed(() => {
-          return cardExpenseItems.value.reduce((sum, item) => sum + (Number(item.twdAmount) || 0), 0);
+        // 信用卡獨立統計 (台幣為主，不扣抵現金/外幣預算)
+        const totalCreditCardSpendTwd = computed(() => {
+          return expenseItems.value
+            .filter(item => item.paymentMethod === 'credit')
+            .reduce((sum, item) => sum + (item.amountTwd || 0), 0);
         });
 
-        const totalCardFeeTwd = computed(() => {
-          return cardExpenseItems.value.reduce((sum, item) => sum + (Number(item.feeTwd) || 0), 0);
+        const totalCreditCardFeeTwd = computed(() => {
+          return Math.round(totalCreditCardSpendTwd.value * 0.015);
         });
 
-        // 消費記帳彈窗
+        // 記一筆消費 Modal
         const modalExpense = reactive({
           isOpen: false,
           isEdit: false,
           form: {
             id: '',
             title: '',
-            category: '餐飲美食',
-            paymentMethod: 'cash',
-            currency: 'CNY',
-            currencySymbol: '¥',
-            originalAmount: null,
-            twdAmount: null,
-            feeTwd: 0,
-            includeForeignFee: false,
-            datetime: '',
+            paymentMethod: 'cash', // 'cash' or 'credit'
+            amountForeign: null,
+            amountTwd: null,
+            dateShort: '',
             notes: ''
           }
         });
 
-        const getNowDateTimeString = () => {
-          const now = new Date();
-          const y = now.getFullYear();
-          const m = String(now.getMonth() + 1).padStart(2, '0');
-          const d = String(now.getDate()).padStart(2, '0');
-          const hh = String(now.getHours()).padStart(2, '0');
-          const mm = String(now.getMinutes()).padStart(2, '0');
-          return `${y}-${m}-${d}T${hh}:${mm}`;
-        };
-
         const openAddExpenseModal = () => {
           modalExpense.isEdit = false;
+          const today = new Date();
           modalExpense.form = {
             id: '',
             title: '',
-            category: '餐飲美食',
             paymentMethod: 'cash',
-            currency: currentCurrency.value.code,
-            currencySymbol: currentCurrency.value.symbol,
-            originalAmount: null,
-            twdAmount: null,
-            feeTwd: 0,
-            includeForeignFee: true,
-            datetime: getNowDateTimeString(),
+            amountForeign: null,
+            amountTwd: null,
+            dateShort: `${today.getMonth() + 1}/${today.getDate()}`,
             notes: ''
           };
           modalExpense.isOpen = true;
@@ -1928,90 +2093,54 @@
           modalExpense.isOpen = true;
         };
 
-        // 現金輸入時連動換算
-        const onCashOriginalAmountChange = () => {
+        const onCashForeignInput = () => {
           if (modalExpense.form.paymentMethod === 'cash') {
-            const val = parseFloat(modalExpense.form.originalAmount) || 0;
-            modalExpense.form.twdAmount = Math.round(val * exchangeRate.value);
-            modalExpense.form.feeTwd = 0;
-          }
-        };
-
-        // 信用卡台幣請款輸入時計算 1.5% 手續費
-        const onCardTwdAmountChange = () => {
-          if (modalExpense.form.paymentMethod === 'card') {
-            const twd = parseFloat(modalExpense.form.twdAmount) || 0;
-            if (modalExpense.form.includeForeignFee) {
-              modalExpense.form.feeTwd = Math.round(twd * 0.015);
-            } else {
-              modalExpense.form.feeTwd = 0;
-            }
+            const f = modalExpense.form.amountForeign || 0;
+            modalExpense.form.amountTwd = Math.round(f * exchangeRate.value);
           }
         };
 
         const submitSaveExpense = () => {
           const f = modalExpense.form;
           if (!f.title.trim()) {
-            showToast('請輸入消費品項名稱');
+            showToast('請輸入消費名稱');
             return;
           }
-          if ((!f.originalAmount || f.originalAmount <= 0) && (!f.twdAmount || f.twdAmount <= 0)) {
-            showToast('請輸入有效金額');
+          if (!f.amountForeign && !f.amountTwd) {
+            showToast('請輸入金額');
             return;
           }
 
-          f.originalAmount = parseFloat(f.originalAmount) || 0;
-          f.twdAmount = parseFloat(f.twdAmount) || 0;
-          f.feeTwd = parseFloat(f.feeTwd) || 0;
-          f.currencySymbol = currentCurrency.value.symbol;
-          f.currency = currentCurrency.value.code;
+          if (f.paymentMethod === 'cash') {
+            f.amountTwd = Math.round((f.amountForeign || 0) * exchangeRate.value);
+          } else {
+            f.amountForeign = f.amountForeign || 0;
+            f.amountTwd = f.amountTwd || Math.round(f.amountForeign * exchangeRate.value);
+          }
 
           if (modalExpense.isEdit) {
-            const idx = expenseItems.value.findIndex(e => String(e.id) === String(f.id));
+            const idx = expenseItems.value.findIndex(e => e.id === f.id);
             if (idx !== -1) {
               expenseItems.value[idx] = { ...f };
             }
             showToast('消費紀錄已更新');
           } else {
+            const uniqueId = `exp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             expenseItems.value.unshift({
               ...f,
-              id: 'exp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6)
+              id: uniqueId
             });
-            showToast('已記下一筆消費支出');
+            showToast('已新增一筆消費');
           }
           modalExpense.isOpen = false;
         };
 
         const deleteExpenseItem = (id) => {
-          expenseItems.value = expenseItems.value.filter(e => String(e.id) !== String(id));
+          expenseItems.value = expenseItems.value.filter(e => e.id !== id);
           showToast('已刪除消費紀錄');
         };
 
-        const getCategoryIcon = (cat) => {
-          switch (cat) {
-            case '餐飲美食': return 'fa-solid fa-utensils';
-            case '購物採買': return 'fa-solid fa-bag-shopping';
-            case '交通出行': return 'fa-solid fa-taxi';
-            case '門票體驗': return 'fa-solid fa-ticket';
-            case '住宿花費': return 'fa-solid fa-hotel';
-            default: return 'fa-solid fa-receipt';
-          }
-        };
-
-        const formatDateTime = (dtStr) => {
-          if (!dtStr) return '';
-          return dtStr.replace('T', ' ');
-        };
-
-        // ==================== 4. 預算規劃系統 (台幣總計與幣別排序小計) ====================
-        const budgetCategories = [
-          { key: CATEGORY_KEYS.FIXED, title: '固定大項開銷', icon: 'fa-solid fa-plane text-cq-moss' },
-          { key: CATEGORY_KEYS.TICKET, title: '行程門票與體驗項目', icon: 'fa-solid fa-ticket text-cq-cinnabar' },
-          { key: CATEGORY_KEYS.FOOD, title: '餐食預估費用', icon: 'fa-solid fa-utensils text-cq-gold' },
-          { key: CATEGORY_KEYS.PERSONAL, title: '個人限定項目', icon: 'fa-solid fa-wand-magic-sparkles text-cq-cinnabar' }
-        ];
-
-        // 預算項目起始為 0 (空陣列)
+        // ==================== 4. 預算規劃系統 (起始為 0 筆) ====================
         const budgetItems = ref([]);
 
         const modalBudget = reactive({
@@ -2042,14 +2171,7 @@
 
         const openEditBudgetModal = (item) => {
           modalBudget.isEdit = true;
-          modalBudget.form = {
-            id: String(item.id),
-            category: item.category,
-            title: item.title,
-            amount: item.amount,
-            currency: item.currency,
-            notes: item.notes || ''
-          };
+          modalBudget.form = { ...item };
           modalBudget.isOpen = true;
         };
 
@@ -2059,45 +2181,31 @@
             showToast('請輸入預算項目名稱');
             return;
           }
-          if (f.amount === null || f.amount === undefined || isNaN(Number(f.amount)) || Number(f.amount) <= 0) {
-            showToast('請輸入大於 0 的有效金額');
+          if (!f.amount || f.amount <= 0) {
+            showToast('請輸入有效金額');
             return;
           }
 
           if (modalBudget.isEdit) {
-            const targetId = String(f.id);
-            const idx = budgetItems.value.findIndex(b => String(b.id) === targetId);
+            const idx = budgetItems.value.findIndex(b => b.id === f.id);
             if (idx !== -1) {
-              budgetItems.value[idx] = {
-                id: targetId,
-                category: f.category,
-                title: f.title.trim(),
-                amount: parseFloat(f.amount),
-                currency: f.currency,
-                notes: (f.notes || '').trim()
-              };
-              showToast('預算項目已更新');
-            } else {
-              showToast('找不到該預算項目');
+              budgetItems.value[idx] = { ...f, amount: parseFloat(f.amount) };
             }
+            showToast('預算項目已更新');
           } else {
-            const newId = 'bdg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+            const uniqueId = `b-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             budgetItems.value.push({
-              id: newId,
-              category: f.category,
-              title: f.title.trim(),
-              amount: parseFloat(f.amount),
-              currency: f.currency,
-              notes: (f.notes || '').trim()
+              ...f,
+              id: uniqueId,
+              amount: parseFloat(f.amount)
             });
-            showToast('已新增預算規劃');
+            showToast('已新增預算項目');
           }
           modalBudget.isOpen = false;
         };
 
         const deleteBudgetItem = (id) => {
-          const targetId = String(id);
-          budgetItems.value = budgetItems.value.filter(b => String(b.id) !== targetId);
+          budgetItems.value = budgetItems.value.filter(b => b.id !== id);
           showToast('已刪除預算項目');
         };
 
@@ -2105,34 +2213,31 @@
           return budgetItems.value.filter(b => b.category === cat);
         };
 
-        // 外幣群組與小計
-        const getCategoryForeignItems = (cat) => {
-          return getItemsByCategory(cat).filter(b => b.currency !== 'TWD');
-        };
-        const getCategoryForeignSubtotal = (cat) => {
-          return getCategoryForeignItems(cat).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        // 自動將各分類下的項目區分外幣與台幣，並排序後小計
+        const getCategoryGroupedItems = (cat) => {
+          const items = getItemsByCategory(cat);
+          const foreign = items.filter(i => i.currency !== 'TWD');
+          const twd = items.filter(i => i.currency === 'TWD');
+          const foreignSubtotal = foreign.reduce((sum, i) => sum + i.amount, 0);
+          const twdSubtotal = twd.reduce((sum, i) => sum + i.amount, 0);
+          return {
+            foreign,
+            twd,
+            foreignSubtotal,
+            twdSubtotal
+          };
         };
 
-        // 台幣群組與小計
-        const getCategoryTwdItems = (cat) => {
-          return getItemsByCategory(cat).filter(b => b.currency === 'TWD');
-        };
-        const getCategoryTwdSubtotal = (cat) => {
-          return getCategoryTwdItems(cat).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-        };
-
-        // 該類別全部折合台幣總和
         const getCategoryTotalTwd = (cat) => {
           return getItemsByCategory(cat).reduce((sum, item) => {
             if (item.currency === 'TWD') {
-              return sum + (Number(item.amount) || 0);
+              return sum + item.amount;
             } else {
-              return sum + ((Number(item.amount) || 0) * exchangeRate.value);
+              return sum + (item.amount * exchangeRate.value);
             }
           }, 0);
         };
 
-        // 行程預算規劃總覽：綜合以台幣 (TWD) 計算
         const totalBudgetTwd = computed(() => {
           return Math.round(
             getCategoryTotalTwd(CATEGORY_KEYS.FIXED) +
@@ -2146,10 +2251,8 @@
           return exchangeRate.value > 0 ? (totalBudgetTwd.value / exchangeRate.value) : 0;
         });
 
-        // ==================== 5. 美食備用清單 (起始皆為 0) ====================
-        // 推薦餐廳清單起始為 0
+        // ==================== 5. 美食備用清單 (起始為 0 筆) ====================
         const foodList = ref([]);
-
         const checkedInFoodCount = computed(() => foodList.value.filter(f => f.isChecked).length);
         const toggleFoodCheck = (food) => { food.isChecked = !food.isChecked; };
 
@@ -2192,7 +2295,7 @@
             foodList.value.unshift({ id: 'f-' + Date.now(), ...modalFood.form, recommendations: recs, isChecked: false });
           }
           modalFood.isOpen = false;
-          showToast('推薦餐廳已儲存');
+          showToast('推薦餐廳已更新');
         };
 
         const deleteFood = (id) => {
@@ -2200,14 +2303,14 @@
           showToast('已刪除推薦餐廳');
         };
 
-        // 飲品小吃清單起始為 0
+        // 飲品小吃清單 (起始為 0 筆)
         const snacksList = ref([]);
 
-        const snackFilterType = ref('ALL');
         const snackCount = computed(() => snacksList.value.filter(s => s.type === 'snack').length);
         const drinkCount = computed(() => snacksList.value.filter(s => s.type === 'drink').length);
         const snackFoodCount = computed(() => snacksList.value.filter(s => s.type === 'snackFood').length);
 
+        const snackFilterType = ref('ALL');
         const filteredSnacksList = computed(() => {
           if (snackFilterType.value === 'ALL') return snacksList.value;
           return snacksList.value.filter(s => s.type === snackFilterType.value);
@@ -2249,8 +2352,7 @@
             const idx = snacksList.value.findIndex(s => s.id === modalSnack.form.id);
             if (idx !== -1) snacksList.value[idx] = { ...modalSnack.form, recommendations: recs };
           } else {
-            const newId = 's-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
-            snacksList.value.unshift({ id: newId, ...modalSnack.form, recommendations: recs, isChecked: false });
+            snacksList.value.unshift({ id: 's-' + Date.now(), ...modalSnack.form, recommendations: recs, isChecked: false });
           }
           modalSnack.isOpen = false;
           showToast('品項已儲存');
@@ -2261,13 +2363,13 @@
           showToast('已刪除品項');
         };
 
-        // 備用口袋景點清單起始為 0
+        // 備用口袋景點 (起始為 0 筆)
         const backupSpots = ref([]);
 
         const modalBackup = reactive({
           isOpen: false,
           isEdit: false,
-          form: { id: '', name: '', tag: '景點備案', duration: '1小時', desc: '' }
+          form: { id: '', name: '', tag: '雨天備案', duration: '1小時', desc: '' }
         });
 
         const openAddBackupModal = () => {
@@ -2299,7 +2401,7 @@
           showToast('已刪除備用景點');
         };
 
-        // ==================== 6. 工具函式 (Toast, 複製, 分享) ====================
+        // Toast 輕量提示
         const toast = reactive({ show: false, message: '' });
         const showToast = (msg) => {
           toast.message = msg;
@@ -2307,6 +2409,7 @@
           setTimeout(() => { toast.show = false; }, 2200);
         };
 
+        // 複製文字
         const copyText = (txt) => {
           if (!txt) return;
           const temp = document.createElement('textarea');
@@ -2322,14 +2425,20 @@
           document.body.removeChild(temp);
         };
 
+        // 一鍵產生專屬分享連結 (記帳 + 預算 + 美食)
         const generateShareUrl = () => {
           try {
             const payload = JSON.stringify({
               v: 7,
-              tripMeta: { ...tripMeta },
+              tripMeta: {
+                title: tripMeta.title,
+                startDate: tripMeta.startDate,
+                endDate: tripMeta.endDate,
+                scheduleNote: tripMeta.scheduleNote
+              },
               currency: currentCurrency.value,
-              budgetCap: budgetCapForeign.value,
-              expenseItems: expenseItems.value,
+              budgetCapForeign: budgetCapForeign.value,
+              expenses: expenseItems.value,
               budget: budgetItems.value,
               food: foodList.value,
               snacks: snacksList.value,
@@ -2345,9 +2454,11 @@
 
             const currentUrl = window.location.href.split('#')[0];
             const shareUrl = `${currentUrl}#data=${encoded}`;
+
             copyText(shareUrl);
-            showToast('已複製記帳分享連結！傳給朋友即可直接檢視');
+            showToast('已複製分享連結！好友開啟即可匯入當前記帳與預算快照');
           } catch (err) {
+            console.error('產生分享失敗:', err);
             showToast('產生分享連結失敗');
           }
         };
@@ -2356,6 +2467,7 @@
           try {
             const hash = window.location.hash;
             if (!hash || !hash.includes('data=')) return;
+
             const encoded = hash.split('data=')[1];
             if (!encoded) return;
 
@@ -2377,15 +2489,21 @@
                 if (parsed.tripMeta.scheduleNote) tripMeta.scheduleNote = parsed.tripMeta.scheduleNote;
               }
               if (parsed.currency) currentCurrency.value = parsed.currency;
-              if (parsed.budgetCap) budgetCapForeign.value = parsed.budgetCap;
-              if (Array.isArray(parsed.expenseItems)) expenseItems.value = parsed.expenseItems;
+              if (typeof parsed.budgetCapForeign === 'number') budgetCapForeign.value = parsed.budgetCapForeign;
+              if (Array.isArray(parsed.expenses)) expenseItems.value = parsed.expenses;
               if (Array.isArray(parsed.budget)) budgetItems.value = parsed.budget;
               if (Array.isArray(parsed.food)) foodList.value = parsed.food;
               if (Array.isArray(parsed.snacks)) snacksList.value = parsed.snacks;
               if (Array.isArray(parsed.backup)) backupSpots.value = parsed.backup;
-              showToast('已成功載入分享的記帳與預算資料！');
+              showToast('已成功載入分享的旅遊記帳與預算資料！');
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn('載入分享資料失敗:', e);
+          }
+        };
+
+        const switchTab = (tab) => {
+          activeTab.value = tab;
         };
 
         onMounted(() => {
@@ -2418,28 +2536,21 @@
           openEditBudgetCapModal,
           submitSaveBudgetCap,
           expenseItems,
-          expenseFilterMethod,
-          cashExpenseItems,
-          cardExpenseItems,
-          cashExpenseCount,
-          filteredExpenseItems,
+          expenseFilter,
+          filteredExpenses,
           totalCashExpenseForeign,
           totalCashExpenseTwd,
           remainingBudgetForeign,
-          budgetUsagePercent,
-          totalCardAmountTwd,
-          totalCardFeeTwd,
+          budgetUsagePercentage,
+          totalCreditCardSpendTwd,
+          totalCreditCardFeeTwd,
           modalExpense,
           openAddExpenseModal,
           openEditExpenseModal,
-          onCashOriginalAmountChange,
-          onCardTwdAmountChange,
+          onCashForeignInput,
           submitSaveExpense,
           deleteExpenseItem,
-          getCategoryIcon,
-          formatDateTime,
           CATEGORY_KEYS,
-          budgetCategories,
           budgetItems,
           modalBudget,
           openAddBudgetModal,
@@ -2447,10 +2558,7 @@
           submitSaveBudget,
           deleteBudgetItem,
           getItemsByCategory,
-          getCategoryForeignItems,
-          getCategoryForeignSubtotal,
-          getCategoryTwdItems,
-          getCategoryTwdSubtotal,
+          getCategoryGroupedItems,
           getCategoryTotalTwd,
           totalBudgetTwd,
           totalBudgetDestCurrency,
@@ -2480,6 +2588,7 @@
           openEditBackupModal,
           submitSaveBackup,
           deleteBackupSpot,
+          switchTab,
           copyText,
           generateShareUrl,
           toast
